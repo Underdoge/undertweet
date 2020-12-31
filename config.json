@@ -1,0 +1,28 @@
+{
+    "twitter":{
+        "consumerKey":"hjcZKcAY4qpldDq7NKkRuXGeu",
+        "consumerSecret":"o7QMcqDxDYxdYelVlTxmJlfdskXVmiXJ6TfgONkZQCEV4thl3U",
+        "token":"875564809160347649-Dc1RdXjGMd3RSQWAdiRs6ibjjI0rGQK",
+        "token_secret":"FuwhxMA7fkq3xuireEsSdrWDTU5fpH9JrghEvTyqEjiQd"
+    },
+    "irc":{
+        "nick":"undertweet",
+        "host":"irc.rizon.net",
+        "pass": "YUn0h@x0r",
+        "auto_reconnect": true,
+        "auto_reconnect_wait": 4000,
+        "auto_reconnect_max_retries": 3,
+        "port":9999,
+        "tls":true,
+        "channels":["#steam","#node.js","#testing","#bullshit"],
+        "adminHostnames":["i.eat.ass","my.dude","CEO.of.antifa"],
+        "adminNicks":["l0l","underdoge"],
+        "ignoreHostnames": ["vape.bot","i.want.your.hot.cummies.inside.me"],
+        "ignoreNicks": ["daddy","VapeBot","neo8ball","Taigabot","prtaiga","RaptorBot"],
+        "ignoreIdents": ["~bigpapa"]
+    },
+    "nedb":{
+        "filename":"./undertweet.db",
+        "autoload":true
+    }
+}
