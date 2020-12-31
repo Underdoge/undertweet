@@ -1,0 +1,11 @@
+[Unit]
+Description=Undertweet Service.
+
+[Service]
+User=root
+Type=simple
+WorkingDirectory=/home/eduardo_chapa_gmail_com/undertweet
+ExecStart=/bin/bash /home/eduardo_chapa_gmail_com/undertweet/undertweet_service.sh
+
+[Install]
+WantedBy=multi-user.target
