@@ -5,7 +5,7 @@ const
     IRC = require('irc-framework'),
     colors = require('irc-colors'),
     config = require('./config'),
-	stream = require('./stream'),
+	stream = require('./streamv2'),
     nedb = require('nedb'),
     host = config.irc.host,
     port = config.irc.port,
@@ -20,10 +20,11 @@ const
     htmlMap ={
         '&amp;': '&', '&lt;':'<', '&gt;':'>',
     },
-    htmlKeys = ['&amp;', '&lt;', '&gt;'];
+    htmlKeys = ['&amp;', '&lt;', '&gt;'],
+    token = config.twitter.bearer_token;
 
 var
-    request = require('request'),
+    needle = require('needle'),
     commands = [],
     bot = new IRC.Client();
     
@@ -41,6 +42,22 @@ bot.on('connected', function() {
 
 function unescape(char) {
     return htmlMap[char];
+}
+
+function sendSpace(to,title,state,started_at,host_ids,participant_count){
+    let message = null;
+    if (state == "live") {
+    message = `\
+Twitter Space "${colors.teal(title)}" is now live 🔴, \
+started on ${new Date(started_at).toLocaleDateString('en-us', dateOptions)} \
+and has ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participants.`;
+    } else { 
+    message = `\
+Twitter Space "${colors.teal(title)}" has ended, \
+started on ${new Date(started_at).toLocaleDateString('en-us', dateOptions)} \
+and had ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participants.`;
+    }
+    bot.say (to,message);
 }
 
 function sendTweet(to,text,username,date,retweets,favorites,isQuote,quotedUsername,quotedText){
@@ -87,60 +104,54 @@ function follow (event) {
         removeIndex = null,
         handle = null,
         to = null,
-        oauth = {
-            'consumer_key': config.twitter.consumerKey,
-            'consumer_secret': config.twitter.consumerSecret,
-            'token': config.twitter.token,
-            'token_secret': config.twitter.token_secret,
-        },
         url = 'https://api.twitter.com/1.1/users/show.json',
         db = new nedb(config.nedb);
 
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             handle = command.handle;
-            let qs = { "screen_name" : handle };
+            let data = { "screen_name" : handle };
             to = command.channel;
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
-                // IRC USER HAS OPER OR MORE                 
-                    request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
-                        if ( err ) {
-                            bot.say(to,`Error: ${err}`);
-                            throw Error(err);
-                        }
-                        if ( !result.errors && result ) {
-                            // add twitter ID
-                            // see if it doesn't exist already
-                            let doc = { 'channel': to, 'ids': [ result.id_str ] };
-                            db.find({ 'channel': to }, function (err, following) {
-                                if (!following[0]) {
-                                    db.insert(doc, function(err) {
+                // IRC USER HAS OPER OR MORE
+                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                    if ( err ) {
+                        bot.say(to,`Error: ${err}`);
+                        throw Error(err);
+                    }
+                    if ( !result.errors && result ) {
+                        // add twitter ID
+                        // see if it doesn't exist already
+                        let doc = { 'channel': to, 'handles': [ result.screen_name ] };
+                        db.find({ 'channel': to }, function (err, following) {
+                            if (!following[0]) {
+                                db.insert(doc, function(err) {
+                                    if (err) {
+                                        bot.say(to,err);
+                                    }
+                                    bot.say(to,`Now following ${result.name} in ${to}!`);
+                                    stream.endStream();
+                                });
+                            } else {
+                                if (following[0].handles && following[0].handles.indexOf(result.screen_name) == -1) {
+                                    following[0].handles.push(result.screen_name);
+                                    db.update({ 'channel': to }, { $set : { 'handles': following[0].handles } }, function(err) {
                                         if (err) {
                                             bot.say(to,err);
                                         }
-                                        bot.say(to,`Now following ${result.name} in ${to}!`);
+                                        bot.say(to,`Now following ${result.name} in ${to}`);
                                         stream.endStream();
                                     });
                                 } else {
-                                    if (following[0].ids && following[0].ids.indexOf(result.id_str) == -1) {
-                                        following[0].ids.push(result.id_str);
-                                        db.update({ 'channel': to }, { $set : { 'ids': following[0].ids } }, function(err) {
-                                            if (err) {
-                                                bot.say(to,err);
-                                            }
-                                            bot.say(to,`Now following ${result.name} in ${to}`);
-                                            stream.endStream();
-                                        });
-                                    } else {
-                                        bot.say(to,`Already following ${result.name} in ${to}!`);
-                                    }
+                                    bot.say(to,`Already following ${result.name} in ${to}!`);
                                 }
-                            });
-                        } else {
-                            bot.say(to,'Tweeter handle not found!.');
-                        }
-                    });
+                            }
+                        });
+                    } else {
+                        bot.say(to,'Tweeter handle not found!.');
+                    }
+                });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
                 bot.say(event.nick, 'You need AOP (@) access or more to perform that action in this channel.');
@@ -155,33 +166,27 @@ function unfollow (event) {
         removeIndex = null,
         handle = null,
         to = null,
-        oauth = {
-            'consumer_key': config.twitter.consumerKey,
-            'consumer_secret': config.twitter.consumerSecret,
-            'token': config.twitter.token,
-            'token_secret': config.twitter.token_secret,
-        },
         url = 'https://api.twitter.com/1.1/users/show.json',
         db = new nedb(config.nedb);
 
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             handle = command.handle;
-            let qs = { "screen_name" : handle };
+            let data = { "screen_name" : handle };
             to = command.channel;
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
-                request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
+                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if (err) {
                         bot.say(to,`Error: ${err}`);
                         throw Error(err);
                     }
                     if (!result.errors && result) {
                         db.find({ 'channel': to }, function (err, following) {
-                            if (following[0] && following[0].ids.indexOf(result.id_str) != -1) {
-                                following[0].ids.splice(following[0].ids.indexOf(result.id_str),1);
-                                db.update({ 'channel': to }, { $set : { 'ids': following[0].ids } }, function(err) {
+                            if (following[0] && following[0].handles.indexOf(result.screen_name) != -1) {
+                                following[0].handles.splice(following[0].handles.indexOf(result.screen_name),1);
+                                db.update({ 'channel': to }, { $set : { 'handles': following[0].handles } }, function(err) {
                                     if (err) {
                                         bot.say(to,err);
                                     }
@@ -215,56 +220,21 @@ bot.on('message', function(event) {
     // if message is a valid .ut XXXXX string
     if (config.irc.ignoreHostnames.indexOf(hostname) ===-1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1) {
         if (message.match(/^\.ut\s.+$/)) {
-            // if message is .ut info
-            if (message.match(/^\.ut\sinfo$/)) {
-
-                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                    let
-                        oauth = {
-                            'consumer_key': config.twitter.consumerKey,
-                            'consumer_secret': config.twitter.consumerSecret,
-                            'token': config.twitter.token,
-                            'token_secret': config.twitter.token_secret,
-                        },
-                        url = 'https://api.twitter.com/1.1/users/show.json',
-                        qs = {
-                            'screen_name': 'underdoge_',
-                            'user_id': '238260357',
-                        };
-
-                    request.get({url, oauth, qs, 'json':true}, function(err, r, user) {
-                        if (err) {
-                            bot.say(to,`Error: ${err}`);
-                            throw Error(err);
-                        }
-                        bot.say(to,`Auth working! User: ${user.name} | Description: ${user.description}`);
-                    });
-
-                } else // No auth data, ask user to authenticate bot
-                    bot.say(to,'No auth data.');
-
-            } else
             // if message is .ut @useraccount
             if (message.match(/^\.ut\s@\w+$/)) {
                 // get that account's last tweet
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
                     let
-                        oauth = {
-                            'consumer_key': config.twitter.consumerKey,
-                            'consumer_secret': config.twitter.consumerSecret,
-                            'token': config.twitter.token,
-                            'token_secret': config.twitter.token_secret,
-                        },
                         account = message.slice(message.search(/@/)+1),
                         url = 'https://api.twitter.com/1.1/statuses/user_timeline.json',
-                        qs = {
+                        data = {
                             'screen_name': account,
                             'count': 1,
                             'tweet_mode': 'extended',
                         };
                     
-                    request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
-                        if (err) {
+                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                            if (err) {
                             bot.say(to,`Error: ${err}`);
                             throw Error(err);
                         }
@@ -290,23 +260,17 @@ bot.on('message', function(event) {
             if (message.match(/^\.ut\s.+$/)) {
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
                     let
-                        oauth = {
-                            'consumer_key': config.twitter.consumerKey,
-                            'consumer_secret': config.twitter.consumerSecret,
-                            'token': config.twitter.token,
-                            'token_secret': config.twitter.token_secret,
-                        },
                         sq = message.slice(4),
                         url = 'https://api.twitter.com/1.1/search/tweets.json',
-                        qs = {
+                        data = {
                             'q': sq,
                             'lang': 'en',
                             'count': 1,
                             'tweet_mode': 'extended',
                             // mixed results if no result_type is specified
                         };
-                    request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
-                        if (err) {
+                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                            if (err) {
                             bot.say(to,`Error: ${err}`);
                             throw Error(err);
                         }
@@ -322,8 +286,8 @@ bot.on('message', function(event) {
                             sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
                         } else {
                             // no results found by mixed search, searching now by popular tweets
-                            qs.result_type='popular';
-                            request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
+                            data.result_type='popular';
+                            needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                                 if (err) {
                                     bot.say(to,`Error: ${err}`);
                                     throw Error(err);
@@ -356,26 +320,19 @@ bot.on('message', function(event) {
                 if (message.match(/t\.co\/\w+/)) {
                     // message contains a t.co link
                     message=`https://${message.match(/t\.co\/\w+/)[0]}`;
-                    request({'url':message,'headers': {'User-Agent': 'request'}},function(err,response) {
+                    needle({'url':message,'headers': {'User-Agent': 'request'}},function(err,response) {
                         message=response.request.uri.href;
                         if (message.match(/twitter\.com\/\w+\/status\/\d+/)) {
                             // it is a valid twitter status url
                             let
                                 id = message.slice(message.search(/\/\d+/)+1),
-                                oauth = {
-                                    'consumer_key': config.twitter.consumerKey,
-                                    'consumer_secret': config.twitter.consumerSecret,
-                                    'token': config.twitter.token,
-                                    'token_secret': config.twitter.token_secret,
-                                },
                                 url = 'https://api.twitter.com/1.1/statuses/show.json',
-                                qs = {
+                                data = {
                                     id,
                                     'tweet_mode': 'extended',
 				                };
-                            
-                            request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
-                                if (err) {
+                            needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                                    if (err) {
                                     bot.say(to,`Error: ${err}`);
                                     throw Error(err);
                                 }
@@ -390,6 +347,8 @@ bot.on('message', function(event) {
                                     
                                 }
                             });
+                        } else {
+                            
                         }
                     });
                     return;
@@ -401,20 +360,14 @@ bot.on('message', function(event) {
                     message=message.match(/twitter\.com\/i\/web\/status\/\d+/)[0];
                 let
                     id = message.slice(message.search(/\/status\/\d+/)+8),
-                    oauth = {
-                        'consumer_key': config.twitter.consumerKey,
-                        'consumer_secret': config.twitter.consumerSecret,
-                        'token': config.twitter.token,
-                        'token_secret': config.twitter.token_secret,
-                    },
                     url = 'https://api.twitter.com/1.1/statuses/show.json',
-                    qs = {
+                    data = {
                         id,
                         'tweet_mode': 'extended',
                     };
                     
-                request.get({url, oauth, qs, 'json':true}, function(err, r, result) {
-                    if (err) {
+                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                        if (err) {
                         bot.say(to,`Error: ${err}`);
                         throw Error(err);
                     }
@@ -433,6 +386,32 @@ bot.on('message', function(event) {
                         } else {
                             sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
                         }
+                    } else {
+                        bot.say(to,'No results for that tweet!.');
+                    }
+                });
+                    
+            } else // No auth data, ask user to authenticate bot
+                    bot.say(to,'No auth data.');
+        } else
+        if (message.match(/twitter\.com\/i\/spaces\/\w+/)) {
+            if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                let
+                    id = message.slice(message.search(/\/spaces\/\w+/)+8),
+                    url = `https://api.twitter.com/2/spaces/${id}`,
+                    data = {
+                        'space.fields': 'participant_count,started_at,state,title,host_ids',
+                    };
+                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                        if (err) {
+                        bot.say(to,`Error: ${err}`);
+                        throw Error(err);
+                    }
+                    if (!result.errors && result) {
+                        htmlKeys.forEach( curr => {
+                            result.data.title = result.data.title.replace(new RegExp(curr,'g'),unescape(curr));
+                        });
+                        sendSpace(to,result.data.title,result.data.state,result.data.started_at,result.data.host_ids,result.data.participant_count);
                     } else {
                         bot.say(to,'No results for that tweet!.');
                     }
@@ -490,20 +469,14 @@ bot.on('message', function(event) {
             if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
 
                 db.find({ 'channel': to }, function (err, following) {
-                    if (following[0] && following[0].ids) {
+                    if (following[0] && following[0].handles) {
                         let
-                            following_ids = following[0].ids.toString(),
-                            oauth = {
-                                'consumer_key': config.twitter.consumerKey,
-                                'consumer_secret': config.twitter.consumerSecret,
-                                'token': config.twitter.token,
-                                'token_secret': config.twitter.token_secret,
-                            },
+                            following_handles = following[0].handles.toString(),
                             url = 'https://api.twitter.com/1.1/users/lookup.json',
-                            qs = {
-                                'user_id': following_ids,
+                            data = {
+                                'screen_name': following_handles,
                             };
-                        request.post({url, oauth, qs, 'json':true}, function(err, r, result) {
+                        needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                             if (err) {
                                 bot.say(to,`Error: ${err}`);
                                 throw Error(err);

@@ -3,7 +3,7 @@
 const
     
     http = require('http'),
-    request = require('request'),
+    needle = require('needle'),
     config = require('./config'),
 
     app_port = process.env.app_port || 80,
@@ -25,7 +25,7 @@ http.createServer(function(req, res) {
                 'resources': 'search,statuses,users',
             };
         
-        request.get({url, oauth, qs, 'json':true}, function(err, response, resources) {
+        needle.get({url, oauth, qs, 'json':true}, function(err, response, resources) {
             if (err) {
                 res.write(`Error: ${err}`);
                 throw Error(err);
