@@ -5,7 +5,7 @@ const
     IRC = require('irc-framework'),
     colors = require('irc-colors'),
     config = require('./config'),
-	stream = require('./streamv2'),
+    stream = require('./streamv2'),
     nedb = require('nedb'),
     host = config.irc.host,
     port = config.irc.port,
