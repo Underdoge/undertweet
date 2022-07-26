@@ -10,8 +10,10 @@ const
     host = config.irc.host,
     port = config.irc.port,
     nick = config.irc.nick,
+    username = config.irc.nick,
+    gecos = config.irc.nick,
     tls = config.irc.tls,
-    pass = config.irc.pass,
+    password = config.irc.pass,
     dateOptions = {
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
@@ -30,6 +32,10 @@ var
     
 bot.on('error', function(err) {
     console.log(err);
+});
+
+bot.on('invited', function(event) {
+    bot.join(event.channel);
 });
 
 bot.on('connected', function() {
@@ -504,7 +510,7 @@ bot.on('message', function(event) {
 });
 
 bot.on('registered', function (){
-    bot.say('nickserv','identify '+ pass);
+    bot.say('nickserv','identify '+ password);
 })
 
-bot.connect({host,port,tls,nick});
+bot.connect({host,port,tls,nick,username,gecos,password});
