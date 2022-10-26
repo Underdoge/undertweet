@@ -1,1 +1,5 @@
 undertweet.db
+node_modules
+images
+config.json
+undertweet_service.sh
