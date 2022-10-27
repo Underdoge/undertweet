@@ -152,6 +152,22 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
     }
 }
 
+function getUnixTimeDifference(date1,date2){
+    var difference = date1 - date2;
+
+    var daysDifference = Math.floor(difference/1000/60/60/24);
+    difference -= daysDifference*1000*60*60*24
+
+    var hoursDifference = Math.floor(difference/1000/60/60);
+    difference -= hoursDifference*1000*60*60
+
+    var minutesDifference = Math.floor(difference/1000/60);
+    difference -= minutesDifference*1000*60
+
+    return minutesDifference;   
+
+}
+
 function unescape(char) {
     return htmlMap[char];
 }
@@ -169,9 +185,8 @@ function getLongWait(){
 }
 
 function setLongWait(val){
-    longwait = val;
+    longwait = getUnixTimeDifference(Date.now(),val) + 1;
 }
-
 
 function getStream() {
     return stream;
@@ -196,7 +211,6 @@ function getStatusCode() {
 function setStatusCode(code) {
     STATUS_CODE = code;
 }
-
 
 exports.endStream = function() {
     if (getStream()){
@@ -291,6 +305,7 @@ exports.startStream = function(db) {
                                     })
                                     .on('response', function(response) {
                                         if (response.statusCode != 200){
+                                            setLongWait(response.headers["x-rate-limit-reset"]);
                                             irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }.`);
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }.`);
                                         } else {
@@ -317,10 +332,9 @@ exports.startStream = function(db) {
                                             setWait(2*getWait());
                                         } else 
                                         if (getStatusCode() == 429) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${(getLongWait()/1000)/60} minutes.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${(getLongWait()/1000)/60} minutes.`);
-                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},getLongWait());
-                                            setLongWait(2*getLongWait());
+                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait() } minutes.`);
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait() } minutes.`);
+                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},getLongWait()*60*1000);
                                         } else
                                         if (getStatusCode() == 503) {
                                             irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
