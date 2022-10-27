@@ -22,6 +22,7 @@ const
 var
     needle = require('needle'),
     STATUS_CODE = '',
+    longwait = 960000,
     wait = 60000,
     channels = [],
     stream = null,
@@ -162,6 +163,15 @@ function getWait(){
 function setWait(val){
     wait = val;
 }
+
+function getLongWait(){
+    return longwait;
+}
+
+function setLongWait(val){
+    longwait = val;
+}
+
 
 function getStream() {
     return stream;
@@ -305,6 +315,12 @@ exports.startStream = function(db) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
                                             setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
                                             setWait(2*getWait());
+                                        } else 
+                                        if (getStatusCode() == 429) {
+                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${(getLongWait()/1000)/60} minutes.`);
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${(getLongWait()/1000)/60} minutes.`);
+                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},getLongWait());
+                                            setLongWait(2*getLongWait());
                                         } else
                                         if (getStatusCode() == 503) {
                                             irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
