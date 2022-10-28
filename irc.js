@@ -50,7 +50,7 @@ bot.on('connected', function() {
         bot.join(channel);
         channels[channel] = { running: false };
     });
-    stream.startStream(db);
+    //stream.startStream(db);
 });
 
 function unescape(char) {
@@ -133,6 +133,54 @@ function postImage(to,from,prompt){
 exports.sayToChannel = function(channel,message) {
     bot.say(channel,message);
 };
+
+function enable (event) {
+    let
+        removeIndex = null,
+        module = null,
+        to = null,
+        db = new nedb(config.nedb);
+    commands.forEach ( function ( command, index ) {
+        if ( command.nick == event.nick ) {
+            module = command.module;
+            to = command.channel;
+            removeIndex = index;
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+                let doc = { 'channel': to, 'modules': [ module ] };
+                db.find({ 'channel': to }, function (err, modules) {
+                    if (!modules[0] || (modules[0] && !modules[0].modules)) {
+                        db.insert(doc, function(err) {
+                            if (err) {
+                                bot.say(to,err);
+                            }
+                            bot.say(to,`Enabled ${module} in ${to}!`);
+                            //stream.endStream();
+                        });
+                    } else {
+                        if (modules[0].modules && modules[0].modules.indexOf(module) == -1) {
+                            modules[0].modules.push(module);
+                            db.update({ 'channel': to }, { $set : { 'modules': modules[0].modules } }, function(err) {
+                                if (err) {
+                                    bot.say(to,err);
+                                }
+                                bot.say(to,`Enabled ${module} in ${to}`);
+                                //stream.endStream();
+                            });
+                        } else {
+                            if (!modules[0].modules) {
+
+                                
+                            } else {
+
+                            }
+                            bot.say(to,`${module} already enabled in ${to}!`);
+                        }
+                    }
+                });
+            }
+        }
+    });
+}
 
 function follow (event) {
     let
@@ -474,19 +522,34 @@ bot.on('message', function(event) {
         if (message.match(/^\.source$/)) {
             bot.say(to,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
         } else
-        if ( message.match(/^\.follow\s@?\w+$/)) {
+        if ( message.match(/^\.enable\s\w+$/)) {
             // .follow command - add user ID to stream
             if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                var handle = null;
-                if (message.match(/^\.follow\s@\w+$/))
-                    handle = message.slice(message.search(/@\w+$/)+1);
-                else
+                var module = null;
+                if (message.match(/^\.enable\s\w+$/))
                     handle = message.slice(message.search(/\s\w+$/)+1);
-                commands.push({'nick': from, 'handle': handle, 'channel': to});
-                bot.whois(from,follow);
+                if (handle == "twitter" || handle == "dalle"){
+                    commands.push({'nick': from, 'module': module, 'channel': to});
+                    bot.whois(from,enable);
+                } else {
+                    bot.say(to,'Module not found');
+                }
             } else // No auth data, ask user to authenticate bot
                 bot.say(to,'No auth data.');
         } else
+            if ( message.match(/^\.follow\s@?\w+$/)) {
+                // .follow command - add user ID to stream
+                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                    var handle = null;
+                    if (message.match(/^\.follow\s@\w+$/))
+                        handle = message.slice(message.search(/@\w+$/)+1);
+                    else
+                        handle = message.slice(message.search(/\s\w+$/)+1);
+                    commands.push({'nick': from, 'handle': handle, 'channel': to});
+                    bot.whois(from,follow);
+                } else // No auth data, ask user to authenticate bot
+                    bot.say(to,'No auth data.');
+            } else
         if ( message.match(/^\.unfollow\s@?\w+$/)) {
             // .unfollow command - remove user ID from stream
             if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
