@@ -156,16 +156,17 @@ function getUnixTimeDifference(date1,date2){
     var difference = date1 - date2;
 
     var daysDifference = Math.floor(difference/1000/60/60/24);
-    difference -= daysDifference*1000*60*60*24
+    difference -= daysDifference*1000*60*60*24;
 
     var hoursDifference = Math.floor(difference/1000/60/60);
-    difference -= hoursDifference*1000*60*60
+    difference -= hoursDifference*1000*60*60;
 
     var minutesDifference = Math.floor(difference/1000/60);
     difference -= minutesDifference*1000*60
 
-    return minutesDifference;   
+    var secondsDifference = Math.floor(difference/1000);
 
+    return minutesDifference+Math.round(secondsDifference/60);
 }
 
 function unescape(char) {
@@ -185,7 +186,7 @@ function getLongWait(){
 }
 
 function setLongWait(val){
-    longwait = getUnixTimeDifference(Date.now(),val) + 1;
+    longwait = getUnixTimeDifference(Date.now(),val);
 }
 
 function getStream() {
@@ -332,9 +333,9 @@ exports.startStream = function(db) {
                                             setWait(2*getWait());
                                         } else 
                                         if (getStatusCode() == 429) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait() } minutes.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait() } minutes.`);
-                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},getLongWait()*60*1000);
+                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},(getLongWait()+1)*60*1000);
                                         } else
                                         if (getStatusCode() == 503) {
                                             irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
