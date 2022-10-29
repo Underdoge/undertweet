@@ -80,7 +80,12 @@ class streamReader extends writableStream.Writable {
                                             if (json.quoted_status.truncated){
                                                 json.quoted_status.text = json.quoted_status.extended_tweet.full_text.replace(/\n/g,' ');    
                                             } else {
-                                                json.quoted_status.text = json.quoted_status.text.replace(/\n/g,' ');
+                                                if (json.quoted_status.text)
+                                                    json.quoted_status.text = json.quoted_status.text.replace(/\n/g,' ');
+                                                else{
+                                                    console.log("Empty quoted status text");
+                                                    json.quoted_status.text = "Empty quoted status text";
+                                                }
                                             }
                                             json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
                                             htmlKeys.forEach( curr => {
