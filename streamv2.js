@@ -238,6 +238,7 @@ exports.startStream = function(db) {
                 ids = null
             } else {
                 console.log("Found some rules to delete");
+                irc.sayToChannel('#testing',`Delete old following rules: ${JSON.stringify(response.body.data)} `);
                 var ids = response.body.data.map(rule => rule.id);
             }
             let data = {
