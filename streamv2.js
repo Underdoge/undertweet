@@ -298,7 +298,7 @@ exports.startStream = function(db) {
                                     stream.on('error', function (error) {
                                         console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}`);
                                         irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting.`);
-                                        setTimeout(function() {exports.startStream(new nedb(config.nedb));},60000);
+                                        exports.endStream();
                                     })
                                     .on('timeout', function() {
                                         console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
