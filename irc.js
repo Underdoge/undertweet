@@ -53,6 +53,18 @@ bot.on('connected', function() {
     stream.startStream(db);
 });
 
+function getEnabledModulesInChannel (channel) {
+    return new Promise(resolve => {
+        let db = new nedb(config.nedb);
+        db.find({ 'channel': channel }, function (err, channels) {
+            if (channels[0] && channels[0].modules)
+                resolve(channels[0].modules);
+            else
+                resolve(false);
+        });
+    });
+}
+
 function isModuleEnabledInChannel (channel, module) {
     return new Promise(resolve => {
         let db = new nedb(config.nedb);
@@ -555,6 +567,7 @@ bot.on('message', async function(event) {
             bot.say(from,'Usage:');
             setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel (must be ~ or bot admin).');},1000);
             setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel (must be ~ or bot admin).');},1000);
             setTimeout(function() { bot.say(from,`Avaialble modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
@@ -569,6 +582,14 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/^\.source$/)) {
             bot.say(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
+        } else
+        if ( message.match(/^\.modules$/)) {            
+            let modules = await getEnabledModulesInChannel(to);
+            if (modules && modules.length > 0){
+                bot.say(from,`Enabled modules in ${to}: ${modules}`);
+            } else {
+                bot.say(from,`No modules enabled in ${to}.`);
+            }
         } else
         if ( message.match(/^\.enable\s\w+(\s\w+)*$/)) {            
             let module = null;
