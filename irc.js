@@ -53,6 +53,18 @@ bot.on('connected', function() {
     //stream.startStream(db);
 });
 
+function isModuleEnabledInChannel (channel, module) {
+    return new Promise(resolve => {
+        let db = new nedb(config.nedb);
+        db.find({ 'channel': channel }, function (err, channels) {
+            if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
+                resolve(true);
+            else
+                resolve(false);
+        });
+    });
+}
+
 function unescape(char) {
     return htmlMap[char];
 }
@@ -145,42 +157,86 @@ function enable (event) {
             module = command.module;
             to = command.channel;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
-                let doc = { 'channel': to, 'modules': [ module ] };
-                db.find({ 'channel': to }, function (err, modules) {
-                    if (!modules[0] || (modules[0] && !modules[0].modules)) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+                let doc = { 'channel': to, 'handles':[], 'modules': [ module ] };
+                db.find({ 'channel': to }, function (err, channels) {
+                    if (!channels[0]) {
                         db.insert(doc, function(err) {
                             if (err) {
-                                bot.say(to,err);
+                                bot.say(event.nick,err);
                             }
-                            bot.say(to,`Enabled ${module} in ${to}!`);
+                            bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
                             //stream.endStream();
                         });
                     } else {
-                        if (modules[0].modules && modules[0].modules.indexOf(module) == -1) {
-                            modules[0].modules.push(module);
-                            db.update({ 'channel': to }, { $set : { 'modules': modules[0].modules } }, function(err) {
+                        if (channels[0].modules && channels[0].modules.indexOf(module) == -1) {
+                            channels[0].modules.push(module);
+                            db.update({ 'channel': to }, { $set : { 'modules': channels[0].modules } }, function(err) {
                                 if (err) {
-                                    bot.say(to,err);
+                                    bot.say(event.nick,err);
                                 }
-                                bot.say(to,`Enabled ${module} in ${to}`);
+                                bot.say(event.nick,`Enabled '${module}' module in ${to}`);
                                 //stream.endStream();
                             });
                         } else {
-                            if (!modules[0].modules) {
-
-                                
+                            if (channels[0] && !channels[0].modules) {
+                                db.update({ 'channel': to }, { $set : { 'modules': [module] } }, function(err) {
+                                    if (err) {
+                                        bot.say(event.nick,err);
+                                    }
+                                    bot.say(event.nick,`Enabled '${module}' module in ${to}`);
+                                    //stream.endStream();
+                                });
                             } else {
-
+                                bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
                             }
-                            bot.say(to,`${module} already enabled in ${to}!`);
                         }
                     }
                 });
+            } else {
+                // IRC USER DOESN'T HAVE OPER OR MORE
+                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
+    commands.splice(removeIndex,1);
 }
+
+function disable (event) {
+    let
+        removeIndex = null,
+        module = null,
+        to = null,
+        db = new nedb(config.nedb);
+    commands.forEach ( function ( command, index ) {
+        if ( command.nick == event.nick ) {
+            module = command.module;
+            to = command.channel;
+            removeIndex = index;
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+                db.find({ 'channel': to }, function (err, channels) {
+                    if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1) {
+                        channels[0].modules.splice(channels[0].modules.indexOf(module),1);
+                        db.update({ 'channel': to }, { $set : { 'modules': channels[0].modules } }, function(err) {
+                            if (err) {
+                                bot.say(event.nick,err);
+                            }
+                            bot.say(event.nick,`Disabled '${module}' module in ${to}`);
+                            stream.endStream();
+                        });
+                    } else {
+                        bot.say(event.nick,`Module '${module}' not enabled in ${to}!`); 
+                    }
+                });
+            } else {
+                // IRC USER DOESN'T HAVE OPER OR MORE
+                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+            }
+        }
+    });
+    commands.splice(removeIndex,1);
+}
+
 
 function follow (event) {
     let
@@ -200,7 +256,7 @@ function follow (event) {
                 // IRC USER HAS OPER OR MORE
                 needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if ( err ) {
-                        bot.say(to,`Error: ${err}`);
+                        bot.say(event.nick,`Error: ${err}`);
                         throw Error(err);
                     }
                     if ( !result.errors && result ) {
@@ -211,9 +267,9 @@ function follow (event) {
                             if (!following[0]) {
                                 db.insert(doc, function(err) {
                                     if (err) {
-                                        bot.say(to,err);
+                                        bot.say(event.nick,err);
                                     }
-                                    bot.say(to,`Now following ${result.name} in ${to}!`);
+                                    bot.say(event.nick,`Now following ${result.name} in ${to}!`);
                                     stream.endStream();
                                 });
                             } else {
@@ -221,23 +277,23 @@ function follow (event) {
                                     following[0].handles.push(result.screen_name);
                                     db.update({ 'channel': to }, { $set : { 'handles': following[0].handles } }, function(err) {
                                         if (err) {
-                                            bot.say(to,err);
+                                            bot.say(event.nick,err);
                                         }
-                                        bot.say(to,`Now following ${result.name} in ${to}`);
+                                        bot.say(event.nick,`Now following ${result.name} in ${to}`);
                                         stream.endStream();
                                     });
                                 } else {
-                                    bot.say(to,`Already following ${result.name} in ${to}!`);
+                                    bot.say(event.nick,`Already following ${result.name} in ${to}!`);
                                 }
                             }
                         });
                     } else {
-                        bot.say(to,'Tweeter handle not found!.');
+                        bot.say(event.nick,'Tweeter handle not found!.');
                     }
                 });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You need AOP (@) access or more to perform that action in this channel.');
+                bot.say(event.nick, 'You must be AOP (@) access or higher to perform that action in this channel.');
             }
         }
     });
@@ -262,7 +318,7 @@ function unfollow (event) {
                 // IRC USER HAS OPER OR MORE
                 needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if (err) {
-                        bot.say(to,`Error: ${err}`);
+                        bot.say(event.nick,`Error: ${err}`);
                         throw Error(err);
                     }
                     if (!result.errors && result) {
@@ -271,29 +327,29 @@ function unfollow (event) {
                                 following[0].handles.splice(following[0].handles.indexOf(result.screen_name),1);
                                 db.update({ 'channel': to }, { $set : { 'handles': following[0].handles } }, function(err) {
                                     if (err) {
-                                        bot.say(to,err);
+                                        bot.say(event.nick,err);
                                     }
-                                    bot.say(to,`Unfollowed ${result.name} in ${to}!`);
+                                    bot.say(event.nick,`Unfollowed ${result.name} in ${to}!`);
                                     stream.endStream();
                                 });
                             } else {
-                                bot.say(to,`Not following ${result.name} in ${to}!`); 
+                                bot.say(event.nick,`Not following ${result.name} in ${to}!`); 
                             }
                         });
                     } else {
-                        bot.say(to,'Twitter handle not found!.');
+                        bot.say(event.nick,'Twitter handle not found!.');
                     }
                 });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You need AOP (@) access or more to perform that action in this channel.');
+                bot.say(event.nick, 'You must be AOP (@) access or higher to perform that action in this channel.');
             }
         }
     });
     commands.splice(removeIndex,1);
 }
 
-bot.on('message', function(event) {
+bot.on('message', async function(event) {
     let
         from=event.nick,
         ident=event.ident,
@@ -303,208 +359,201 @@ bot.on('message', function(event) {
     // if message is a valid .ut XXXXX string
     if (config.irc.ignoreHostnames.indexOf(hostname) ===-1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1) {
         if (message.match(/^\.ut\s.+$/)) {
-            // if message is .ut @useraccount
-            if (message.match(/^\.ut\s@\w+$/)) {
-                // get that account's last tweet
-                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                    let
-                        account = message.slice(message.search(/@/)+1),
-                        url = 'https://api.twitter.com/1.1/statuses/user_timeline.json',
-                        data = {
-                            'screen_name': account,
-                            'count': 1,
-                            'tweet_mode': 'extended',
-                        };
-                    
-                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                            if (err) {
-                            bot.say(to,`Error: ${err}`);
-                            throw Error(err);
-                        }
-                        if (result[0]) {
-                            // remove \n from text result
-                            if (result[0].retweeted_status) {
-                                result[0].favorite_count = result[0].retweeted_status.favorite_count;
-                                result[0].full_text = `RT @${result[0].retweeted_status.user.screen_name}: ${result[0].retweeted_status.full_text}`;
-                            }
-                            result[0].text = result[0].full_text.replace(/\n/g, ' ');
-                            htmlKeys.forEach( curr => {
-                                result[0].text = result[0].text.replace(new RegExp(curr,'g'),unescape(curr));
-                            });
-                            sendTweet(to,result[0].text,result[0].user.name,result[0].created_at,result[0].retweet_count,result[0].favorite_count,false,null,null);
-                        } else
-                            bot.say(to,`No results for @${account}!.`);
-                    });
-
-                } else // No auth data, ask user to authenticate bot
-                    bot.say(to,'No auth data.');
-            } else
-            // general search
-            if (message.match(/^\.ut\s.+$/)) {
-                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                    let
-                        sq = message.slice(4),
-                        url = 'https://api.twitter.com/1.1/search/tweets.json',
-                        data = {
-                            'q': sq,
-                            'lang': 'en',
-                            'count': 1,
-                            'tweet_mode': 'extended',
-                            // mixed results if no result_type is specified
-                        };
-                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                            if (err) {
-                            bot.say(to,`Error: ${err}`);
-                            throw Error(err);
-                        }
-                        if (result.statuses[0]) {
-                            if (result.statuses[0].retweeted_status) {
-                                result.statuses[0].favorite_count = result.statuses[0].retweeted_status.favorite_count;
-                                result.statuses[0].full_text = `RT @${result.statuses[0].retweeted_status.user.screen_name}: ${result.statuses[0].retweeted_status.full_text}`;
-                            }
-                            result.statuses[0].text = result.statuses[0].full_text.replace(/\n/g, ' ');
-                            htmlKeys.forEach( curr => {
-                                result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr));
-                            });
-                            sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
-                        } else {
-                            // no results found by mixed search, searching now by popular tweets
-                            data.result_type='popular';
-                            needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+            if (await isModuleEnabledInChannel(to,"twitter search")) {
+                // if message is .ut @useraccount
+                if (message.match(/^\.ut\s@\w+$/)) {
+                    // get that account's last tweet
+                    if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                        let
+                            account = message.slice(message.search(/@/)+1),
+                            url = 'https://api.twitter.com/1.1/statuses/user_timeline.json',
+                            data = {
+                                'screen_name': account,
+                                'count': 1,
+                                'tweet_mode': 'extended',
+                            };
+                        
+                        needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                                 if (err) {
-                                    bot.say(to,`Error: ${err}`);
-                                    throw Error(err);
+                                bot.say(from,`Error: ${err}`);
+                                throw Error(err);
+                            }
+                            if (result[0]) {
+                                // remove \n from text result
+                                if (result[0].retweeted_status) {
+                                    result[0].favorite_count = result[0].retweeted_status.favorite_count;
+                                    result[0].full_text = `RT @${result[0].retweeted_status.user.screen_name}: ${result[0].retweeted_status.full_text}`;
                                 }
-                                if (result.statuses[0]) {
-                                    if (result.statuses[0].retweeted_status) {
-                                        result.statuses[0].favorite_count = result.statuses[0].retweeted_status.favorite_count;
-                                        result.statuses[0].full_text = `RT @${result.statuses[0].retweeted_status.user.screen_name}: ${result.statuses[0].retweeted_status.full_text}`;
+                                result[0].text = result[0].full_text.replace(/\n/g, ' ');
+                                htmlKeys.forEach( curr => {
+                                    result[0].text = result[0].text.replace(new RegExp(curr,'g'),unescape(curr));
+                                });
+                                sendTweet(to,result[0].text,result[0].user.name,result[0].created_at,result[0].retweet_count,result[0].favorite_count,false,null,null);
+                            } else
+                                bot.say(to,`No results for @${account}!.`);
+                        });
+
+                    } else // No auth data, ask user to authenticate bot
+                        bot.say(from,'No auth data.');
+                } else
+                // general search
+                if (message.match(/^\.ut\s.+$/)) {
+                    if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                        let
+                            sq = message.slice(4),
+                            url = 'https://api.twitter.com/1.1/search/tweets.json',
+                            data = {
+                                'q': sq,
+                                'lang': 'en',
+                                'count': 1,
+                                'tweet_mode': 'extended',
+                                // mixed results if no result_type is specified
+                            };
+                        needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                                if (err) {
+                                bot.say(from,`Error: ${err}`);
+                                throw Error(err);
+                            }
+                            if (result.statuses[0]) {
+                                if (result.statuses[0].retweeted_status) {
+                                    result.statuses[0].favorite_count = result.statuses[0].retweeted_status.favorite_count;
+                                    result.statuses[0].full_text = `RT @${result.statuses[0].retweeted_status.user.screen_name}: ${result.statuses[0].retweeted_status.full_text}`;
+                                }
+                                result.statuses[0].text = result.statuses[0].full_text.replace(/\n/g, ' ');
+                                htmlKeys.forEach( curr => {
+                                    result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr));
+                                });
+                                sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
+                            } else {
+                                // no results found by mixed search, searching now by popular tweets
+                                data.result_type='popular';
+                                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                                    if (err) {
+                                        bot.say(from,`Error: ${err}`);
+                                        throw Error(err);
                                     }
-                                    result.statuses[0].text = result.statuses[0].full_text.replace(/\n/g, ' ');
-                                    htmlKeys.forEach( curr => {
-                                        result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr));
-                                    });
-                                    sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
-                                } else
-                                    bot.say(to,`No results for ${sq}!.`);
-                            });
-                        }
-                    });
-                } else // No auth data, ask user to authenticate bot
-                        bot.say(to,'No auth data.');
-            } else
-                bot.say(to,'Invalid command.');
+                                    if (result.statuses[0]) {
+                                        if (result.statuses[0].retweeted_status) {
+                                            result.statuses[0].favorite_count = result.statuses[0].retweeted_status.favorite_count;
+                                            result.statuses[0].full_text = `RT @${result.statuses[0].retweeted_status.user.screen_name}: ${result.statuses[0].retweeted_status.full_text}`;
+                                        }
+                                        result.statuses[0].text = result.statuses[0].full_text.replace(/\n/g, ' ');
+                                        htmlKeys.forEach( curr => {
+                                            result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr));
+                                        });
+                                        sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
+                                    } else
+                                        bot.say(to,`No results for ${sq}!.`);
+                                });
+                            }
+                        });
+                    } else // No auth data, ask user to authenticate bot
+                            bot.say(from,'No auth data.');
+                } else
+                    bot.say(from,'Invalid command.');
+            } else {
+                bot.say(from,`The 'twitter search' module is not enabled in ${to}.`);
+            }
         } else
         // get twitter.com or t.co link
-/*        if (message.match(/twitter\.com\/\w+\/status\/\d+/) || message.match(/twitter\.com\/i\/web\/status\/\d+/) || message.match(/t\.co\/\w+/)) {
-            
-
-            if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                if (message.match(/t\.co\/\w+/)) {
-                    // message contains a t.co link
-                    message=`https://${message.match(/t\.co\/\w+/)[0]}`;
-                    console.log(message);
-                    needle({'url':message,'headers': {'User-Agent': 'needle'}},function(err,response) {
-                        message=response.request.uri.href;
-                        if (message.match(/twitter\.com\/\w+\/status\/\d+/)) {
-                            // it is a valid twitter status url
-                            let
-                                id = message.slice(message.search(/\/\d+/)+1),
-                                url = 'https://api.twitter.com/1.1/statuses/show.json',
-                                data = {
-                                    id,
-                                    'tweet_mode': 'extended',
-				                };
-                            needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                                    if (err) {
-                                    bot.say(to,`Error: ${err}`);
-                                    throw Error(err);
-                                }
-                                if (!result.errors && result) {
-                                    result.text = result.full_text.replace(/\n/g, ' ');
-                                    htmlKeys.forEach( curr => {
-                                        result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr));
-                                    });
-                                    sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
-                                } else {
-                                    bot.say(to,'No results for that tweet!.');
-                                    
-                                }
+        if (message.match(/twitter\.com\/\w+\/status\/\d+/) || message.match(/twitter\.com\/i\/web\/status\/\d+/) || message.match(/t\.co\/\w+/)) {
+            if (await isModuleEnabledInChannel(to,"twitter expand")) {
+                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                    if (message.match(/t\.co\/\w+/)) {
+                        // message contains a t.co link
+                        message=`https://${message.match(/t\.co\/\w+/)[0]}`;
+                        needle({'url':message,'headers': {'User-Agent': 'needle'}},function(err,response) {
+                            message=response.request.uri.href;
+                            if (message.match(/twitter\.com\/\w+\/status\/\d+/)) {
+                                // it is a valid twitter status url
+                                let
+                                    id = message.slice(message.search(/\/\d+/)+1),
+                                    url = 'https://api.twitter.com/1.1/statuses/show.json',
+                                    data = {
+                                        id,
+                                        'tweet_mode': 'extended',
+                                    };
+                                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                                        if (err) {
+                                        bot.say(from,`Error: ${err}`);
+                                        throw Error(err);
+                                    }
+                                    if (!result.errors && result) {
+                                        result.text = result.full_text.replace(/\n/g, ' ');
+                                        htmlKeys.forEach( curr => {
+                                            result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                        });
+                                        sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
+                                    }
+                                });
+                            } else {
+                                
+                            }
+                        });
+                        return;
+                    } else
+                    // message contains twitter.com status link
+                    if (message.match(/twitter\.com\/\w+\/status\/\d+/))
+                        message=message.match(/twitter\.com\/\w+\/status\/\d+/)[0];
+                    else   
+                        message=message.match(/twitter\.com\/i\/web\/status\/\d+/)[0];
+                    let
+                        id = message.slice(message.search(/\/status\/\d+/)+8),
+                        url = 'https://api.twitter.com/1.1/statuses/show.json',
+                        data = {
+                            id,
+                            'tweet_mode': 'extended',
+                        };
+                        
+                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                            if (err) {
+                            bot.say(from,`Error: ${err}`);
+                            throw Error(err);
+                        }
+                        if (!result.errors && result) {
+                            result.text = result.full_text.replace(/\n/g, ' ');
+                            htmlKeys.forEach( curr => {
+                                result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr));
                             });
-                        } else {
-                            
+                            if (result.quoted_status) {
+                                result.quoted_status.text = result.quoted_status.full_text.replace(/\n/g,' ');
+                                result.text = result.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                                htmlKeys.forEach( curr => {
+                                    result.quoted_status.text = result.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                });
+                                sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,true,result.quoted_status.user.screen_name,result.quoted_status.text);
+                            } else {
+                                sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
+                            }
                         }
                     });
-                    return;
-                } else
-                // message contains twitter.com status link
-                if (message.match(/twitter\.com\/\w+\/status\/\d+/))
-                    message=message.match(/twitter\.com\/\w+\/status\/\d+/)[0];
-                else   
-                    message=message.match(/twitter\.com\/i\/web\/status\/\d+/)[0];
-                let
-                    id = message.slice(message.search(/\/status\/\d+/)+8),
-                    url = 'https://api.twitter.com/1.1/statuses/show.json',
-                    data = {
-                        id,
-                        'tweet_mode': 'extended',
-                    };
-                    
-                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                        if (err) {
-                        bot.say(to,`Error: ${err}`);
-                        throw Error(err);
-                    }
-                    if (!result.errors && result) {
-                        result.text = result.full_text.replace(/\n/g, ' ');
-                        htmlKeys.forEach( curr => {
-                            result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr));
-                        });
-                        if (result.quoted_status) {
-                            result.quoted_status.text = result.quoted_status.full_text.replace(/\n/g,' ');
-                            result.text = result.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
-                            htmlKeys.forEach( curr => {
-                                result.quoted_status.text = result.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
-                            });
-                            sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,true,result.quoted_status.user.screen_name,result.quoted_status.text);
-                        } else {
-                            sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
-                        }
-                    } else {
-                        bot.say(to,'No results for that tweet!.');
-                    }
-                });
-                    
-            } else // No auth data, ask user to authenticate bot
-                    bot.say(to,'No auth data.');
+                }
+            }
         } else
         if (message.match(/twitter\.com\/i\/spaces\/\w+/)) {
-            if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                let
-                    id = message.slice(message.search(/\/spaces\/\w+/)+8),
-                    url = `https://api.twitter.com/2/spaces/${id}`,
-                    data = {
-                        'space.fields': 'participant_count,started_at,state,title,host_ids',
-                    };
-                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                        if (err) {
-                        bot.say(to,`Error: ${err}`);
-                        throw Error(err);
-                    }
-                    if (!result.errors && result) {
-                        htmlKeys.forEach( curr => {
-                            result.data.title = result.data.title.replace(new RegExp(curr,'g'),unescape(curr));
-                        });
-                        sendSpace(to,result.data.title,result.data.state,result.data.started_at,result.data.host_ids,result.data.participant_count);
-                    } else {
-                        bot.say(to,'No results for that tweet!.');
-                    }
-                });
-                    
-            } else // No auth data, ask user to authenticate bot
-                    bot.say(to,'No auth data.');
+            if (await isModuleEnabledInChannel(to,"twitter expand")) {
+                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                    let
+                        id = message.slice(message.search(/\/spaces\/\w+/)+8),
+                        url = `https://api.twitter.com/2/spaces/${id}`,
+                        data = {
+                            'space.fields': 'participant_count,started_at,state,title,host_ids',
+                        };
+                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                            if (err) {
+                            bot.say(from,`Error: ${err}`);
+                            throw Error(err);
+                        }
+                        if (!result.errors && result) {
+                            htmlKeys.forEach( curr => {
+                                result.data.title = result.data.title.replace(new RegExp(curr,'g'),unescape(curr));
+                            });
+                            sendSpace(to,result.data.title,result.data.state,result.data.started_at,result.data.host_ids,result.data.participant_count);
+                        }
+                    });
+                }
+            }
         } else 
-        */
         // if message is .help
         if (message.match(/^\.help$/)) {
             bot.say(from,'Usage:');
@@ -517,28 +566,37 @@ bot.on('message', function(event) {
             setTimeout(function() { bot.say(from,'.help - this help message.');},500);
         } else
         if (message.match(/^\.bots$/)) {
-            bot.say(to,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
+            bot.say(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
         } else
         if (message.match(/^\.source$/)) {
-            bot.say(to,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
+            bot.say(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
         } else
-        if ( message.match(/^\.enable\s\w+$/)) {
+        if ( message.match(/^\.enable\s\w+(\s\w+)*$/)) {            
+            let module = null;
+            if (message.match(/^\.enable\s\w+(\s\w+)*$/))
+                module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
+            if (module == "twitter expand" || module == "dalle" || module== "url" || module == "twitter follow" || module == "twitter search"){
+                commands.push({'nick': from, 'module': module, 'channel': to});
+                bot.whois(from,enable);
+            } else {
+                bot.say(from,'Module not found');
+            }
+        } else
+        if ( message.match(/^\.disable\s\w+(\s\w+)*$/)) {
+            // .disable command - disable module on a channel
+            let module = null;
+            if (message.match(/^\.disable\s\w+(\s\w+)*$/))
+                module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
+            if (module == "twitter expand" || module == "dalle" || module== "url" || module == "twitter follow" || module == "twitter search"){
+                commands.push({'nick': from, 'module': module, 'channel': to});
+                bot.whois(from,disable);
+            } else {
+                bot.say(from,'Module not found');
+            }
+        }else
+        if (message.match(/^\.follow\s@?\w+$/)) {
             // .follow command - add user ID to stream
-            if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                var module = null;
-                if (message.match(/^\.enable\s\w+$/))
-                    handle = message.slice(message.search(/\s\w+$/)+1);
-                if (handle == "twitter" || handle == "dalle"){
-                    commands.push({'nick': from, 'module': module, 'channel': to});
-                    bot.whois(from,enable);
-                } else {
-                    bot.say(to,'Module not found');
-                }
-            } else // No auth data, ask user to authenticate bot
-                bot.say(to,'No auth data.');
-        } else
-            if ( message.match(/^\.follow\s@?\w+$/)) {
-                // .follow command - add user ID to stream
+            if (await isModuleEnabledInChannel(to,"twitter follow")) {
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
                     var handle = null;
                     if (message.match(/^\.follow\s@\w+$/))
@@ -548,116 +606,131 @@ bot.on('message', function(event) {
                     commands.push({'nick': from, 'handle': handle, 'channel': to});
                     bot.whois(from,follow);
                 } else // No auth data, ask user to authenticate bot
-                    bot.say(to,'No auth data.');
-            } else
-        if ( message.match(/^\.unfollow\s@?\w+$/)) {
+                    bot.say(from,'No auth data.');
+            } else {
+                bot.say(from,`The 'twitter follow' module is not enabled in ${to}.`);
+            }
+        } else
+        if (message.match(/^\.unfollow\s@?\w+$/)) {
             // .unfollow command - remove user ID from stream
-            if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                var handle=null;
-                if (message.match(/^\.unfollow\s@\w+$/))
-                    handle = message.slice(message.search(/@\w+$/)+1);
-                else
-                    handle = message.slice(message.search(/\s\w+$/)+1);
-                // add command to commands queue
-                commands.push({'nick': from, 'handle': handle, 'channel': to});
-                bot.whois(from, unfollow);
-            } else // No auth data, ask user to authenticate bot
-                bot.say(to,'No auth data.');
+            if (await isModuleEnabledInChannel(to,"twitter follow")) {
+                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                    var handle=null;
+                    if (message.match(/^\.unfollow\s@\w+$/))
+                        handle = message.slice(message.search(/@\w+$/)+1);
+                    else
+                        handle = message.slice(message.search(/\s\w+$/)+1);
+                    // add command to commands queue
+                    commands.push({'nick': from, 'handle': handle, 'channel': to});
+                    bot.whois(from, unfollow);
+                } else // No auth data, ask user to authenticate bot
+                    bot.say(from,'No auth data.');
+            } else {
+                bot.say(from,`The 'twitter follow' module is not enabled in ${to}.`);
+            }
         } else
         if (message.match(/^\.following$/)) {
-            let db = new nedb(config.nedb);
+            if (await isModuleEnabledInChannel(to,"twitter follow")) {
+                let db = new nedb(config.nedb);
 
-            if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
+                if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
 
-                db.find({ 'channel': to }, function (err, following) {
-                    if (following[0] && following[0].handles) {
-                        let
-                            following_handles = following[0].handles.toString(),
-                            url = 'https://api.twitter.com/1.1/users/lookup.json',
-                            data = {
-                                'screen_name': following_handles,
-                            };
-                        needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                            if (err) {
-                                bot.say(to,`Error: ${err}`);
-                                throw Error(err);
-                            }
-                            if (!result.errors && result) {
-                                let accounts=`${result[0].name} (@${result[0].screen_name})`;
-                                result.forEach( function (current,index) {
-                                    if (index>0)
-                                        accounts+=`, ${current.name} (@${current.screen_name})`;
-                                });
-                                bot.say(to,`Following: ${accounts}.`);
-                            } else {
-                                bot.say(to,`Not following anyone in ${to} yet!.`);
-                            }
-                        });
+                    db.find({ 'channel': to }, function (err, following) {
+                        if (following[0] && following[0].handles) {
+                            let
+                                following_handles = following[0].handles.toString(),
+                                url = 'https://api.twitter.com/1.1/users/lookup.json',
+                                data = {
+                                    'screen_name': following_handles,
+                                };
+                            needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                                if (err) {
+                                    bot.say(from,`Error: ${err}`);
+                                    throw Error(err);
+                                }
+                                if (!result.errors && result) {
+                                    let accounts=`${result[0].name} (@${result[0].screen_name})`;
+                                    result.forEach( function (current,index) {
+                                        if (index>0)
+                                            accounts+=`, ${current.name} (@${current.screen_name})`;
+                                    });
+                                    bot.say(from,`Following: ${accounts}.`);
+                                } else {
+                                    bot.say(from,`Not following anyone in ${to} yet!.`);
+                                }
+                            });
 
-                    } else {
-                        bot.say(to,`Not following anyone in ${to} yet!.`); 
-                    }
-                });
-            } else // No auth data, ask user to authenticate bot
-                bot.say(to,'No auth data.');
+                        } else {
+                            bot.say(from,`Not following anyone in ${to} yet!.`); 
+                        }
+                    });
+                } else // No auth data, ask user to authenticate bot
+                    bot.say(from,'No auth data.');
+            } else {
+                bot.say(from,`The 'twitter follow' module is not enabled in ${to}.`);
+            }
         } else
         if (message.match(/\.dalle\s.+$/)) {
-            let
-                url = config.dalle.api_url,
-                prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
-            // check if bot is not handling another call
-            if (!channels[to].running){
-                channels[to].running = true;
-                bot.say(to,`Generating from "${prompt}" prompt...`);
-                needle.post(url, {prompt: prompt},{json: true}, function(error, response) {
-                    if (!error && response.statusCode == 200){
-                        // save 9 images
-                        if (!fs.existsSync(path.join(__dirname,'images',to))){
-                            fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
-                        }
-                        for (let i=0; i < response.body.images.length ; i++){
-                            let buffer = Buffer.from(response.body.images[i], "base64");
-                            fs.writeFileSync(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer);
-                        }
-                        const options_horizontal = {
-                            direction:"horizontal",
-                            color: 0x00000000,
-                            align: 'left', 
-                            offset: 5
-                            },
-                            options_vertical = {
-                                direction:"vertical",
+            if (await isModuleEnabledInChannel(to,"dalle")) {
+                let
+                    url = config.dalle.api_url,
+                    prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
+                // check if bot is not handling another call
+                if (!channels[to].running){
+                    channels[to].running = true;
+                    bot.say(to,`Generating from "${prompt}" prompt...`);
+                    needle.post(url, {prompt: prompt},{json: true}, function(error, response) {
+                        if (!error && response.statusCode == 200){
+                            // save 9 images
+                            if (!fs.existsSync(path.join(__dirname,'images',to))){
+                                fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
+                            }
+                            for (let i=0; i < response.body.images.length ; i++){
+                                let buffer = Buffer.from(response.body.images[i], "base64");
+                                fs.writeFileSync(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer);
+                            }
+                            const options_horizontal = {
+                                direction:"horizontal",
                                 color: 0x00000000,
                                 align: 'left', 
                                 offset: 5
-                            };
-                        // join 9 images into a single 3x3 grid image
-                        joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
-                            img.toFile(path.join(__dirname,'images',to,'row1.jpg'));
-                            joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
-                                img.toFile(path.join(__dirname,'images',to,'row2.jpg'));
-                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
-                                    img.toFile(path.join(__dirname,'images',to,'row3.jpg'));
-                                    setTimeout(function(){
-                                        joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
-                                            img.toFile(path.join(__dirname,'images',to,'dalle.jpg'));
-                                            setTimeout(function(){postImage(to,from,prompt)},500);
-                                        });
-                                    },500);
+                                },
+                                options_vertical = {
+                                    direction:"vertical",
+                                    color: 0x00000000,
+                                    align: 'left', 
+                                    offset: 5
+                                };
+                            // join 9 images into a single 3x3 grid image
+                            joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
+                                img.toFile(path.join(__dirname,'images',to,'row1.jpg'));
+                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
+                                    img.toFile(path.join(__dirname,'images',to,'row2.jpg'));
+                                    joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
+                                        img.toFile(path.join(__dirname,'images',to,'row3.jpg'));
+                                        setTimeout(function(){
+                                            joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
+                                                img.toFile(path.join(__dirname,'images',to,'dalle.jpg'));
+                                                setTimeout(function(){postImage(to,from,prompt)},500);
+                                            });
+                                        },500);
+                                    });
                                 });
                             });
-                        });
-                    } else {
-                        if (response.statusCode == 524){
-                            bot.say(to,`@${from} Dall-E Service is too Busy. Please try again later...`);
                         } else {
-                            bot.say(to,`Dall-E Error ${response.statusCode}: ${response.statusMessage}`);
+                            if (response.statusCode == 524){
+                                bot.say(from,`@${from} Dall-E Service is too Busy. Please try again later...`);
+                            } else {
+                                bot.say(to,`Dall-E Error ${response.statusCode}: ${response.statusMessage}`);
+                            }
+                            channels[to].running = false;
                         }
-                        channels[to].running = false;
-                    }
-                });
+                    });
+                } else {
+                    bot.say(from,`@${from} please wait for the current Dall-E request to complete.`);
+                }
             } else {
-                bot.say(to,`@${from} please wait for the current Dall-E request to complete.`);
+                bot.say(from,`The 'dalle' module is not enabled in ${to}.`);
             }
         }
     }
