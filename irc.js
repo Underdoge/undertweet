@@ -50,7 +50,7 @@ bot.on('connected', function() {
         bot.join(channel);
         channels[channel] = { running: false };
     });
-    //stream.startStream(db);
+    stream.startStream(db);
 });
 
 function isModuleEnabledInChannel (channel, module) {
@@ -166,7 +166,6 @@ function enable (event) {
                                 bot.say(event.nick,err);
                             }
                             bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
-                            //stream.endStream();
                         });
                     } else {
                         if (channels[0].modules && channels[0].modules.indexOf(module) == -1) {
@@ -176,7 +175,6 @@ function enable (event) {
                                     bot.say(event.nick,err);
                                 }
                                 bot.say(event.nick,`Enabled '${module}' module in ${to}`);
-                                //stream.endStream();
                             });
                         } else {
                             if (channels[0] && !channels[0].modules) {
@@ -185,7 +183,6 @@ function enable (event) {
                                         bot.say(event.nick,err);
                                     }
                                     bot.say(event.nick,`Enabled '${module}' module in ${to}`);
-                                    //stream.endStream();
                                 });
                             } else {
                                 bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
@@ -222,7 +219,6 @@ function disable (event) {
                                 bot.say(event.nick,err);
                             }
                             bot.say(event.nick,`Disabled '${module}' module in ${to}`);
-                            stream.endStream();
                         });
                     } else {
                         bot.say(event.nick,`Module '${module}' not enabled in ${to}!`); 
