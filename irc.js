@@ -158,6 +158,30 @@ exports.sayToChannel = function(channel,message) {
     bot.say(channel,message);
 };
 
+function modules (event) {
+    let
+        removeIndex = null,
+        to = null;
+    commands.forEach ( async function ( command, index ) {
+        if ( command.nick == event.nick ) {
+            to = command.channel;
+            removeIndex = index;
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+                let modules = await getEnabledModulesInChannel(to);
+                if (modules && modules.length > 0){
+                    bot.say(event.nick, `Enabled modules in ${to}: ${modules}.`);
+                } else {
+                    bot.say(event.nick, `No modules enabled in ${to}.`);
+                }
+            } else {
+                // IRC USER DOESN'T HAVE OPER OR MORE
+                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+            }
+        }
+    });
+    commands.splice(removeIndex,1);
+}
+
 function enable (event) {
     let
         removeIndex = null,
@@ -565,15 +589,15 @@ bot.on('message', async function(event) {
         // if message is .help
         if (message.match(/^\.help$/)) {
             bot.say(from,'Usage:');
-            setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel (must be ~ or bot admin).');},1000);
-            setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel (must be ~ or bot admin).');},1000);
-            setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,`Avaialble modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
-            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel (must be ~ or bot admin).');},1000);
-            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.dalle <prompt> - request dall-e images from prompt');},1000);
             setTimeout(function() { bot.say(from,'.help - this help message.');},1000);
         } else
@@ -583,13 +607,9 @@ bot.on('message', async function(event) {
         if (message.match(/^\.source$/)) {
             bot.say(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
         } else
-        if ( message.match(/^\.modules$/)) {            
-            let modules = await getEnabledModulesInChannel(to);
-            if (modules && modules.length > 0){
-                bot.say(from,`Enabled modules in ${to}: ${modules}`);
-            } else {
-                bot.say(from,`No modules enabled in ${to}.`);
-            }
+        if (message.match(/^\.modules$/)) {
+            commands.push({'nick': from, 'channel': to});
+            bot.whois(from,modules);
         } else
         if ( message.match(/^\.enable\s\w+(\s\w+)*$/)) {            
             let module = null;
