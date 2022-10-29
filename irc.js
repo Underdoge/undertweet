@@ -293,7 +293,7 @@ function follow (event) {
                 });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be AOP (@) access or higher to perform that action in this channel.');
+                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -342,7 +342,7 @@ function unfollow (event) {
                 });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be AOP (@) access or higher to perform that action in this channel.');
+                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -557,13 +557,16 @@ bot.on('message', async function(event) {
         // if message is .help
         if (message.match(/^\.help$/)) {
             bot.say(from,'Usage:');
-            setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},500);
-            setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},500);
-            setTimeout(function() { bot.say(from,'.following - show currently followed accounts in channel.');},500);
-            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel.');},500);
-            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel.');},500);
-            setTimeout(function() { bot.say(from,'.dalle <prompt> - request dall-e images from prompt');},500);
-            setTimeout(function() { bot.say(from,'.help - this help message.');},500);
+            setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,`Avaialble modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle'.`);},1000);
+            setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
+            setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
+            setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
+            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel (must be ~ or bot admin).');},1000);
+            setTimeout(function() { bot.say(from,'.dalle <prompt> - request dall-e images from prompt');},1000);
+            setTimeout(function() { bot.say(from,'.help - this help message.');},1000);
         } else
         if (message.match(/^\.bots$/)) {
             bot.say(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
@@ -575,7 +578,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module== "url" || module == "twitter follow" || module == "twitter search"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search"){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,enable);
             } else {
@@ -587,7 +590,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module== "url" || module == "twitter follow" || module == "twitter search"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search"){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,disable);
             } else {
