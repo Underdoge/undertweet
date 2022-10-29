@@ -279,7 +279,7 @@ exports.startStream = function(db) {
                                 "add": rules
                             };
                             //Set following rules
-                            console.log(`setting following rules: ${JSON.stringify(data)} `);
+                            irc.sayToChannel('#testing',`setting following rules: ${JSON.stringify(data)} `);
                             needle.post(rulesURL, data, { headers: {"content-type": "application/json","authorization": `Bearer ${token}`}}, function (error,response){
                                 if (response.statusCode !== 201) {
                                     irc.sayToChannel('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
