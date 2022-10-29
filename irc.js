@@ -592,7 +592,7 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Avaialble modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle'.`);},1000);
+            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
