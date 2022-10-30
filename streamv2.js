@@ -239,7 +239,7 @@ exports.startStream = function(db) {
                 ids = null
             } else {
                 console.log("Found some rules to delete");
-                irc.sayToChannel('#testing',`Delete old following rules: ${JSON.stringify(response.body.data)} `);
+                irc.sayToChannel('#testing',`Delete old following rules: ${JSON.stringify(response.body.data[0].value)} `);
                 var ids = response.body.data.map(rule => rule.id);
             }
             let data = {
@@ -281,7 +281,7 @@ exports.startStream = function(db) {
                                 "add": rules
                             };
                             //Set following rules
-                            irc.sayToChannel('#testing',`Set following rules: ${JSON.stringify(data)} `);
+                            irc.sayToChannel('#testing',`Set following rules: ${JSON.stringify(data.add[0].value)} `);
                             needle.post(rulesURL, data, { headers: {"content-type": "application/json","authorization": `Bearer ${token}`}}, function (error,response){
                                 if (response.statusCode !== 201) {
                                     irc.sayToChannel('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
