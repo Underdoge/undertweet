@@ -694,7 +694,7 @@ bot.on('message', async function(event) {
                                         if (index>0)
                                             accounts+=`, ${current.name} (@${current.screen_name})`;
                                     });
-                                    bot.say(from,`Following: ${accounts}.`);
+                                    bot.say(from,`Following: ${accounts} in ${to}.`);
                                 } else {
                                     bot.say(from,`Not following anyone in ${to} yet!.`);
                                 }
