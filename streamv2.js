@@ -304,7 +304,7 @@ exports.startStream = function(db) {
                                         });
                                     stream.on('error', function (error) {
                                         setLongWait(response.headers["x-rate-limit-reset"]);
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error} Next rate limit reset in ${getLongWait()} minutes.`);
+                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Next rate limit reset in ${getLongWait()} minutes.`);
                                         irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting in ${getLongWait()} minutes.`);
                                         setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
                                     })
