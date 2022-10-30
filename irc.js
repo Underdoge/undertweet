@@ -301,7 +301,7 @@ function follow (event) {
                     if ( !result.errors && result ) {
                         // add twitter ID
                         // see if it doesn't exist already
-                        let doc = { 'channel': to, 'handles': [ result.screen_name ] };
+                        let doc = { 'channel': to, 'handles': [ result.screen_name ], 'modules': [] };
                         db.find({ 'channel': to }, function (err, following) {
                             if (!following[0]) {
                                 db.insert(doc, function(err) {
