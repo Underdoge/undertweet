@@ -53,6 +53,7 @@ class streamReader extends writableStream.Writable {
                             throw Error(err);
                         }
                         if (!json.errors && json) {
+                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Headers: x-rate-limit-limit=${ json.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${json.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${json.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getUnixTimeDifference(Date.now(),json.headers["x-rate-limit-reset"])} minutes.`);
                             channels.forEach(function (chan) {
                                 screen_names = chan[1].toString().split(',');
                                 screen_names.forEach(function (screen_name) {
@@ -280,7 +281,7 @@ exports.startStream = function(db) {
                                 "add": rules
                             };
                             //Set following rules
-                            irc.sayToChannel('#testing',`setting following rules: ${JSON.stringify(data)} `);
+                            irc.sayToChannel('#testing',`Set following rules: ${JSON.stringify(data)} `);
                             needle.post(rulesURL, data, { headers: {"content-type": "application/json","authorization": `Bearer ${token}`}}, function (error,response){
                                 if (response.statusCode !== 201) {
                                     irc.sayToChannel('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
@@ -302,10 +303,10 @@ exports.startStream = function(db) {
                                             timeout: 20000
                                         });
                                     stream.on('error', function (error) {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}`);
-                                        irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting.`);
-                                        exports.endStream();
-                                        exports.startStream(new nedb(config.nedb));
+                                        setLongWait(response.headers["x-rate-limit-reset"]);
+                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error} Next rate limit reset in ${getLongWait()} minutes.`);
+                                        irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting in ${getLongWait()} minutes.`);
+                                        setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
                                     })
                                     .on('timeout', function() {
                                         console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
