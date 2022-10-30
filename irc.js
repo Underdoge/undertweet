@@ -44,12 +44,19 @@ bot.on('invite', function(event) {
     bot.join(event.channel);
 });
 
-bot.on('connected', function() {
+bot.on('connected', async function() {
     let db = new nedb(config.nedb);
-    config.irc.channels.forEach( channel => {
-        bot.join(channel);
-        channels[channel] = { running: false };
-    });
+    if (process.env.TESTING == "true") {
+        bot.join("#testing");
+        channels["#testing"] = { running: false };
+    } else {
+        await db.find({}, function (err, allRecords) {
+            allRecords.forEach( record => {
+                bot.join(record.channel);
+                channels[record.channel] = { running: false };
+            });
+        });
+    }
     stream.startStream(db);
 });
 
