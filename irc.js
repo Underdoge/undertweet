@@ -60,7 +60,7 @@ bot.on('connected', async function() {
     stream.startStream(db);
 });
 
-async function getEnabledModulesInChannel (channel) {
+function getEnabledModulesInChannel (channel) {
     let db = new nedb(config.nedb);
     db.find({ 'channel': channel }, function (err, channels) {
         if (channels[0] && channels[0].modules)
@@ -71,7 +71,7 @@ async function getEnabledModulesInChannel (channel) {
 
 }
 
-async function isModuleEnabledInChannel (channel, module) {
+function isModuleEnabledInChannel (channel, module) {
     let db = new nedb(config.nedb);
     db.find({ 'channel': channel }, function (err, channels) {
         if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
