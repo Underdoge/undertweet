@@ -52,8 +52,7 @@ class streamReader extends writableStream.Writable {
                             bot.say(to,`Error: ${err}`);
                             throw Error(err);
                         }
-                        if (!json.errors && json) {
-                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getUnixTimeDifference(Date.now(),response.headers["x-rate-limit-reset"])} minutes.`);
+                        if (!json.errors && json) {                            
                             channels.forEach(function (chan) {
                                 screen_names = chan[1].toString().split(',');
                                 screen_names.forEach(function (screen_name) {
