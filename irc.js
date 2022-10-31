@@ -61,25 +61,27 @@ bot.on('connected', async function() {
 });
 
 function getEnabledModulesInChannel (channel) {
-    let db = new nedb(config.nedb);
-    db.find({ 'channel': channel }, function (err, channels) {
-        if (channels[0] && channels[0].modules)
-            return Promise.resolve(channels[0].modules);
-        else
-            return Promise.resolve(false);
+    new Promise(resolve => {
+        let db = new nedb(config.nedb);
+        db.find({ 'channel': channel }, function (err, channels) {
+            if (channels[0] && channels[0].modules)
+                resolve(channels[0].modules);
+            else
+                resolve(false);
+        });
     });
-
 }
 
 function isModuleEnabledInChannel (channel, module) {
-    let db = new nedb(config.nedb);
-    db.find({ 'channel': channel }, function (err, channels) {
-        if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
-            return Promise.resolve(true);
-        else
-            return Promise.resolve(false);
+    new Promise(resolve => {
+        let db = new nedb(config.nedb);
+        db.find({ 'channel': channel }, function (err, channels) {
+            if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
+                resolve(true);
+            else
+                resolve(false);
+        });
     });
-
 }
 
 function unescape(char) {
