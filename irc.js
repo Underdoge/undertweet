@@ -61,7 +61,7 @@ bot.on('connected', async function() {
 });
 
 function getEnabledModulesInChannel (channel) {
-    new Promise(resolve => {
+    return new Promise(resolve => {
         let db = new nedb(config.nedb);
         db.find({ 'channel': channel }, function (err, channels) {
             if (channels[0] && channels[0].modules)
@@ -73,7 +73,7 @@ function getEnabledModulesInChannel (channel) {
 }
 
 function isModuleEnabledInChannel (channel, module) {
-    new Promise(resolve => {
+    return new Promise(resolve => {
         let db = new nedb(config.nedb);
         db.find({ 'channel': channel }, function (err, channels) {
             if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
@@ -788,4 +788,3 @@ bot.on('registered', function (){
 })
 
 bot.connect({host,port,tls,nick,username,gecos,password});
-
