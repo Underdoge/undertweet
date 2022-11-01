@@ -218,6 +218,18 @@ function setStatusCode(code) {
     STATUS_CODE = code;
 }
 
+function deleteFolowingRules (data){
+    return new Promise (resolve => {
+        needle.post(rulesURL, data, {headers: {"content-type": "application/json","authorization": `Bearer ${token}`}},function (error,response){
+           if (response.statusCode !== 200) {
+                resolve(`No rules to delete`);
+            } else {
+                resolve(`Rules deleted successfully`);
+            }
+        });
+    });
+}
+
 exports.endStream = function() {
     if (getStream()){
         getStream().end();
@@ -229,17 +241,17 @@ exports.endStream = function() {
 exports.startStream = function(db) {
     //Get following rules
     console.log('starting stream');
-    needle.get(rulesURL, { headers: { "authorization": `Bearer ${token}`}}, function (error, response){
+    needle.get(rulesURL, { headers: { "authorization": `Bearer ${token}`}}, async function (error, response){
         if (response.statusCode !== 200) {
             irc.sayToChannel('#testing',`Get All Rules Error Code:${response.statusCode} \n Error:${response.body}`);
         } else { 
+            let ids = null;
             if (response.body.meta.result_count == 0) {
-                console.log("Nothing to delete: " + response.body);
-                ids = null
+                console.log("No rules to delete.");
             } else {
                 console.log("Found some rules to delete");
                 irc.sayToChannel('#testing',`-Old following rules: ${JSON.stringify(response.body.data[0].value)} `);
-                var ids = response.body.data.map(rule => rule.id);
+                ids = response.body.data.map(rule => rule.id);
             }
             let data = {
                 "delete": {
@@ -247,126 +259,124 @@ exports.startStream = function(db) {
                 }
             }
             //Delete following rules
-            needle.post(rulesURL, data, {headers: {"content-type": "application/json","authorization": `Bearer ${token}`}},function (error,response){
-                if (response.statusCode !== 200) {
-                    irc.sayToChannel('#testing',`Delete All Rules Error Code:${response.statusCode}`); 
-                   console.log(`Error deleting rules:${response.body}`);
-                } else {
-                    db.find({}, function (err, following) {
-                        let following_nicks = [],
-                            following_rule = null;
-                        channels = [];
-                        following.forEach(function (channel,index) {
-                            channels.push([channel.channel]);
-                            channels[index].push(channel.handles);
-                            channel.handles.forEach(function (nick) {
-                                if (following_nicks.indexOf(nick) === -1)
-                                    following_nicks.push(nick);
-                            });
-                        });
-                        if(following_nicks.length > 0){
-                            following_nicks.forEach(function(nick,i) {
-                                if (i === 0){
-                                    following_rule = `from:${nick}`;
-                                } else {
-                                    following_rule = following_rule + ` OR from:${nick}`;
-                                }
-                            });
-                            const rules = [{
-                                'value': following_rule,
-                                'tag': 'following nicks'
-                            }];
-                            const data = {
-                                "add": rules
-                            };
-                            //Set following rules
-                            irc.sayToChannel('#testing',`+New following rules: ${JSON.stringify(data.add[0].value)} `);
-                            needle.post(rulesURL, data, { headers: {"content-type": "application/json","authorization": `Bearer ${token}`}}, function (error,response){
-                                if (response.statusCode !== 201) {
-                                    irc.sayToChannel('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
-                                } else {
-                                    console.log(`Following rule set: ${following_rule}`);
-                                    if (getStream()){
-                                        getStream().abort();
-                                        getPipe().destroy();
-                                        getStream().removeAllListeners();
-                                        getStream().destroy();
-                                    }
-                                    let
-                                        p = new streamReader(),          
-                                        stream = needle.get(streamURL, {
-                                            headers: {
-                                                "User-Agent": "v2FilterStreamJS",
-                                                "Authorization": `Bearer ${token}`
-                                            },
-                                            timeout: 20000
-                                        });
-                                    stream.on('error', function (error) {
-                                        setLongWait(response.headers["x-rate-limit-reset"]);
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Next rate limit reset in ${getLongWait()} minutes.`);
-                                        irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting in ${getLongWait()} minutes.`);
-                                        setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
-                                    })
-                                    .on('timeout', function() {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
-                                        irc.sayToChannel('#testing','Connection Timeout.');
-                                    })
-                                    .on('response', function(response) {
-                                        setLongWait(response.headers["x-rate-limit-reset"]);
-                                        if (response.statusCode != 200){
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                            setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
-                                        } else {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                                            setWait(60000);
-                                        }
-                                        setStatusCode(response.statusCode);
-                                    })
-                                    .on('end', function() {
-                                        if (getStatusCode() == 200) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
-                                            exports.startStream(new nedb(config.nedb));
-                                        } else
-                                        if (getStatusCode() == 406) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
-                                        } else
-                                        if (getStatusCode() == 420) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
-                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
-                                            setWait(2*getWait());
-                                        } else 
-                                        if (getStatusCode() == 429) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
-                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},(getLongWait()+1)*60*1000);
-                                        } else
-                                        if (getStatusCode() == 503) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
-                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},300000);
-                                        } else
-                                        if (getStatusCode() == 500) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
-                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
-                                            setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
-                                            setWait(2*getWait());
-                                        } 
-                
-                                    })
-                                    .pipe(p);
-                                    setPipe(p);
-                                    setStream(stream);
-                                }
-                            });
+            let rules = null;
+            if (ids) {
+                 rules = await deleteFolowingRules(data);
+            }
+            console.log (rules);
+            db.find({}, function (err, following) {
+                let following_nicks = [],
+                    following_rule = null;
+                channels = [];
+                following.forEach(function (channel,index) {
+                    channels.push([channel.channel]);
+                    channels[index].push(channel.handles);
+                    channel.handles.forEach(function (nick) {
+                        if (following_nicks.indexOf(nick) === -1)
+                            following_nicks.push(nick);
+                    });
+                });
+                if(following_nicks.length > 0){
+                    following_nicks.forEach(function(nick,i) {
+                        if (i === 0){
+                            following_rule = `from:${nick}`;
                         } else {
-                            irc.sayToChannel('#testing',`Not following anyone, no rules defined yet.`);
+                            following_rule = following_rule + ` OR from:${nick}`;
                         }
                     });
+                    const rules = [{
+                        'value': following_rule,
+                        'tag': 'following nicks'
+                    }];
+                    const data = {
+                        "add": rules
+                    };
+                    //Set following rules
+                    irc.sayToChannel('#testing',`+New following rules: ${JSON.stringify(data.add[0].value)} `);
+                    needle.post(rulesURL, data, { headers: {"content-type": "application/json","authorization": `Bearer ${token}`}}, function (error,response){
+                        if (response.statusCode !== 201) {
+                            irc.sayToChannel('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
+                        } else {
+                            console.log(`Following rule set: ${following_rule}`);
+                            if (getStream()){
+                                getStream().abort();
+                                getPipe().destroy();
+                                getStream().removeAllListeners();
+                                getStream().destroy();
+                            }
+                            let
+                                p = new streamReader(),          
+                                stream = needle.get(streamURL, {
+                                    headers: {
+                                        "User-Agent": "v2FilterStreamJS",
+                                        "Authorization": `Bearer ${token}`
+                                    },
+                                    timeout: 20000
+                                });
+                            stream.on('error', function (error) {
+                                setLongWait(response.headers["x-rate-limit-reset"]);
+                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Next rate limit reset in ${getLongWait()} minutes.`);
+                                irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting in ${getLongWait()} minutes.`);
+                                setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
+                            })
+                            .on('timeout', function() {
+                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
+                                irc.sayToChannel('#testing','Connection Timeout.');
+                            })
+                            .on('response', function(response) {
+                                setLongWait(response.headers["x-rate-limit-reset"]);
+                                if (response.statusCode != 200){
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                    setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
+                                } else {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                    setWait(60000);
+                                }
+                                setStatusCode(response.statusCode);
+                            })
+                            .on('end', function() {
+                                if (getStatusCode() == 200) {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                    exports.startStream(new nedb(config.nedb));
+                                } else
+                                if (getStatusCode() == 406) {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
+                                } else
+                                if (getStatusCode() == 420) {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
+                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
+                                    setWait(2*getWait());
+                                } else 
+                                if (getStatusCode() == 429) {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},(getLongWait()+1)*60*1000);
+                                } else
+                                if (getStatusCode() == 503) {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
+                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},300000);
+                                } else
+                                if (getStatusCode() == 500) {
+                                    irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
+                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
+                                    setWait(2*getWait());
+                                } 
+        
+                            })
+                            .pipe(p);
+                            setPipe(p);
+                            setStream(stream);
+                        }
+                    });
+                } else {
+                    irc.sayToChannel('#testing',`Not following anyone, no rules defined yet.`);
                 }
             });
         }

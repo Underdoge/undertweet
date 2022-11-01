@@ -33,33 +33,11 @@ var
     needle = require('needle'),
     commands = [],
     bot = new IRC.Client();
+
+exports.sayToChannel = function(channel,message) {
+    bot.say(channel,message);
+};
     
-bot.on('error', function(err) {
-    console.log(err);
-});
-
-bot.on('invite', function(event) {
-    channels.push(event.channel);
-    channels[event.channel] = { running: false };
-    bot.join(event.channel);
-});
-
-bot.on('connected', async function() {
-    let db = new nedb(config.nedb);
-    if (process.env.TESTING == "true") {
-        bot.join("#testing");
-        channels["#testing"] = { running: false };
-    } else {
-        await db.find({}, function (err, allRecords) {
-            allRecords.forEach( record => {
-                bot.join(record.channel);
-                channels[record.channel] = { running: false };
-            });
-        });
-    }
-    stream.startStream(db);
-});
-
 function getEnabledModulesInChannel (channel) {
     return new Promise(resolve => {
         let db = new nedb(config.nedb);
@@ -160,10 +138,6 @@ function postImage(to,from,prompt){
     });
     channels[to].running = false;
 }
-
-exports.sayToChannel = function(channel,message) {
-    bot.say(channel,message);
-};
 
 function modules (event) {
     let
@@ -276,7 +250,6 @@ function disable (event) {
     commands.splice(removeIndex,1);
 }
 
-
 function follow (event) {
     let
         removeIndex = null,
@@ -387,6 +360,39 @@ function unfollow (event) {
     });
     commands.splice(removeIndex,1);
 }
+
+function joinChannels(db){
+    return new Promise ( resolve => {
+        db.find({}, function (err, allRecords) {
+            allRecords.forEach( record => {
+                bot.join(record.channel);
+                channels[record.channel] = { running: false };
+            });
+            resolve(channels);
+        });
+    });
+}
+
+bot.on('error', function(err) {
+    console.log(err);
+});
+
+bot.on('invite', function(event) {
+    channels.push(event.channel);
+    channels[event.channel] = { running: false };
+    bot.join(event.channel);
+});
+
+bot.on('connected', async function() {
+    let db = new nedb(config.nedb);
+    if (process.env.TESTING == "true") {
+        bot.join("#testing");
+        channels["#testing"] = { running: false };
+    } else {
+        await joinChannels(db);
+    }
+    stream.startStream(db);
+});
 
 bot.on('message', async function(event) {
     let
@@ -592,27 +598,17 @@ bot.on('message', async function(event) {
                     });
                 }
             }
-        } else 
-        // if message is .help
-        if (message.match(/^\.help$/)) {
-            bot.say(from,'Usage:');
-            setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle'.`);},1000);
-            setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
-            setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
-            setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
-            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.dalle <prompt> - request dall-e images from prompt');},1000);
-            setTimeout(function() { bot.say(from,'.help - this help message.');},1000);
         } else
-        if (message.match(/^\.bots$/)) {
-            bot.say(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
-        } else
-        if (message.match(/^\.source$/)) {
-            bot.say(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
+        // any non-twitter url
+        if (message.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g)) {
+            if (await isModuleEnabledInChannel(to,"url read")) {
+                let url=message.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g)[0];
+                let options = { follow_max: 5, headers: {"User-Agent": 'needle'}};
+                needle.get(url,options,function(err,r,body) {
+                    let title = body.match(/<title>(.*?)<\/title>/)[1];
+                    bot.say(to,`Title: ${title}`);
+                });
+            }
         } else
         if (message.match(/^\.modules$/)) {
             commands.push({'nick': from, 'channel': to});
@@ -622,7 +618,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read"){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,enable);
             } else {
@@ -634,7 +630,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read"){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,disable);
             } else {
@@ -779,6 +775,27 @@ bot.on('message', async function(event) {
             } else {
                 bot.say(from,`The 'dalle' module is not enabled in ${to}.`);
             }
+        } else
+        // if message is .help
+        if (message.match(/^\.help$/)) {
+            bot.say(from,'Usage:');
+            setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read'.`);},1000);
+            setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
+            setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
+            setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
+            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.say(from,'.dalle <prompt> - request dall-e images from prompt');},1000);
+            setTimeout(function() { bot.say(from,'.help - this help message.');},1000);
+        } else
+        if (message.match(/^\.bots$/)) {
+            bot.say(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
+        } else
+        if (message.match(/^\.source$/)) {
+            bot.say(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
         }
     }
 });
