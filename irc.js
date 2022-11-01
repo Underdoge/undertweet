@@ -390,8 +390,8 @@ bot.on('connected', async function() {
         channels["#testing"] = { running: false };
     } else {
         await joinChannels(db);
+        stream.startStream(db);
     }
-    stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
@@ -606,7 +606,8 @@ bot.on('message', async function(event) {
                 if(!(url.match(/youtu.be/)) && !(url.match(/youtube\.com/))){
                     let options = { follow_max: 5, headers: {"User-Agent": 'needle'}};
                     needle.get(url,options,function(err,r,body) {
-                        if (body) {
+                        if (!(body instanceof Buffer)) {
+                            console.log(body);
                             let title = body.match(/<title>(.*?)<\/title>/)[1];
                             htmlKeys.forEach( curr => {
                                 title = title.replace(new RegExp(curr,'g'),unescape(curr));
