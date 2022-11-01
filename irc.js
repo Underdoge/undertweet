@@ -599,7 +599,7 @@ bot.on('message', async function(event) {
                 }
             }
         } else
-        // any non-twitter url
+        // any non-twitter url and ignore youtube urls and files
         if (message.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)) {
             if (await isModuleEnabledInChannel(to,"url read")) {
                 let url=message.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)[0];
