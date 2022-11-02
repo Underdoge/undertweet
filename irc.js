@@ -147,6 +147,7 @@ function modules (event) {
         if ( command.nick == event.nick ) {
             to = command.channel;
             removeIndex = index;
+            console.log(JSON.stringify(event));
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
@@ -378,9 +379,15 @@ bot.on('error', function(err) {
 });
 
 bot.on('invite', function(event) {
-    channels.push(event.channel);
-    channels[event.channel] = { running: false };
-    bot.join(event.channel);
+    let from=event.nick,
+        ident=event.ident,
+        hostname=event.hostname,
+        to=event.channel;
+    if ( config.irc.ignoreHostnames.indexOf(hostname) === -1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1 && event.channel.indexOf(to) >= 0 ) {
+        channels.push(event.channel);
+        channels[event.channel] = { running: false };
+        bot.join(event.channel);
+    }
 });
 
 bot.on('connected', async function() {
