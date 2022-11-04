@@ -158,7 +158,7 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
 }
 
 function getUnixTimeDifference(date1,date2){
-    var difference = date1 - date2;
+    var difference = date2 - date1;
 
     var daysDifference = Math.floor(difference/1000/60/60/24);
     difference -= daysDifference*1000*60*60*24;
