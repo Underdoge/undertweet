@@ -157,21 +157,13 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
     }
 }
 
-function getUnixTimeDifference(date1,date2){
-    var difference = date1 - date2;
+function getUnixTimeDifference(unixTime){
+    let difference = unixTime - Math.floor(Date.now()/1000);
 
-    var daysDifference = Math.floor(difference/1000/60/60/24);
-    difference -= daysDifference*1000*60*60*24;
+    let minutesDifference = Math.floor(difference/60);
+    console.log("Minutes: " + minutesDifference);
 
-    var hoursDifference = Math.floor(difference/1000/60/60);
-    difference -= hoursDifference*1000*60*60;
-
-    var minutesDifference = Math.floor(difference/1000/60);
-    difference -= minutesDifference*1000*60
-
-    var secondsDifference = Math.floor(difference/1000);
-
-    return minutesDifference+Math.round(secondsDifference/60);
+    return minutesDifference;
 }
 
 function unescape(char) {
@@ -191,7 +183,7 @@ function getLongWait(){
 }
 
 function setLongWait(val){
-    longwait = getUnixTimeDifference(Date.now(),val);
+    longwait = getUnixTimeDifference(val);
 }
 
 function getStream() {
@@ -315,9 +307,9 @@ exports.startStream = function(db) {
                                 });
                             stream.on('error', function (error) {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Next rate limit reset in ${getLongWait()} minutes.`);
-                                irc.sayToChannel('#testing',`Error in connection: "${error.code}", restarting in ${getLongWait()} minutes.`);
-                                setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
+                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                irc.sayToChannel('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+2)*60*1000);
                             })
                             .on('timeout', function() {
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
@@ -328,7 +320,7 @@ exports.startStream = function(db) {
                                 if (response.statusCode != 200){
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                    setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+1)*60*1000);
+                                    setTimeout(function() {exports.endStream(); exports.startStream(new nedb(config.nedb))},(getLongWait()+2)*60*1000);
                                 } else {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
@@ -340,6 +332,7 @@ exports.startStream = function(db) {
                                 if (getStatusCode() == 200) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                    exports.endStream();
                                     exports.startStream(new nedb(config.nedb));
                                 } else
                                 if (getStatusCode() == 406) {
