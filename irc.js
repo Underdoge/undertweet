@@ -386,8 +386,10 @@ bot.on('invite', function(event) {
 bot.on('connected', async function() {
     let db = new nedb(config.nedb);
     if (process.env.TESTING == "true") {
-        bot.join("#testing");
-        channels["#testing"] = { running: false };
+        config.irc.channels.forEach( channel => {
+            bot.join(channel);
+            channels[channel] = { running: false };
+        });
     } else {
         await joinChannels(db);
         stream.startStream(db);
