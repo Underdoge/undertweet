@@ -157,17 +157,13 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
     }
 }
 
-function getUnixTimeDifference(date1,date2){
-    var difference = date1 - date2;
+function getUnixTimeDifference(unixTime){
+    let difference = unixTime - Math.floor(Date.now()/1000);
 
-    var minutesDifference = Math.floor(difference/1000/60);
-    difference -= minutesDifference*1000*60
+    let minutesDifference = Math.floor(difference/60);
     console.log("Minutes: " + minutesDifference);
 
-    var secondsDifference = Math.floor(difference/1000);
-    console.log("Seconds: " + secondsDifference);
-
-    return minutesDifference+Math.round(secondsDifference/60);
+    return minutesDifference;
 }
 
 function unescape(char) {
@@ -187,7 +183,7 @@ function getLongWait(){
 }
 
 function setLongWait(val){
-    longwait = getUnixTimeDifference(Date.now(),val);
+    longwait = getUnixTimeDifference(val);
 }
 
 function getStream() {
