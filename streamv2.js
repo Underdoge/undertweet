@@ -158,18 +158,14 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
 }
 
 function getUnixTimeDifference(date1,date2){
-    var difference = date2 - date1;
-
-    var daysDifference = Math.floor(difference/1000/60/60/24);
-    difference -= daysDifference*1000*60*60*24;
-
-    var hoursDifference = Math.floor(difference/1000/60/60);
-    difference -= hoursDifference*1000*60*60;
+    var difference = date1 - date2;
 
     var minutesDifference = Math.floor(difference/1000/60);
     difference -= minutesDifference*1000*60
+    console.log("Minutes: " + minutesDifference);
 
     var secondsDifference = Math.floor(difference/1000);
+    console.log("Seconds: " + secondsDifference);
 
     return minutesDifference+Math.round(secondsDifference/60);
 }
