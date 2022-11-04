@@ -340,6 +340,7 @@ exports.startStream = function(db) {
                                 if (getStatusCode() == 200) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                    exports.endStream();
                                     exports.startStream(new nedb(config.nedb));
                                 } else
                                 if (getStatusCode() == 406) {
