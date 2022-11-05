@@ -3,4 +3,3 @@ node_modules
 images
 config.json
 undertweet_service.sh
-undertweet_new_backup.db
