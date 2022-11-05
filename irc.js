@@ -18,7 +18,6 @@ const
     tls = config.irc.tls,
     password = config.irc.pass,
     dalleUrl = config.dalle.api_url,
-    prompt = null,
     dateOptions = {
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
@@ -47,7 +46,8 @@ var
     needle = require('needle'),
     commands = [],
     bot = new IRC.Client(),
-    buffer = null;
+    buffer = null,
+    prompt = null;
 
 exports.sayToChannel = function(channel,message) {
     bot.say(channel,message);
@@ -747,7 +747,6 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/\.dalle\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"dalle")) {
-                dalleUrl = config.dalle.api_url,
                 prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
                 // check if bot is not handling another call
                 if (!channels[to].running){
