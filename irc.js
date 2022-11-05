@@ -18,6 +18,8 @@ const
     tls = config.irc.tls,
     password = config.irc.pass,
     dalleUrl = config.dalle.api_url,
+    ghettyUrl = config.ghetty.url,
+    twitterUrl = 'https://api.twitter.com/1.1/users/show.json',
     dateOptions = {
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
@@ -133,8 +135,7 @@ ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
 }
 
 function postImage(to,from,prompt){
-    let url = config.ghetty.url,
-        data = {
+    let data = {
             image:{
                 file: path.join(__dirname,'images',to,'dalle.jpg'),
                 content_type: 'image/jpeg'
@@ -144,7 +145,7 @@ function postImage(to,from,prompt){
             multipart:true,
             json:true
         };
-    needle.post(url, data, options, function(error, response, body) {
+    needle.post(ghettyUrl, data, options, function(error, response, body) {
         if (!error && response.statusCode == 200){
             bot.say(to,`@${from} here you go: "${prompt}" ${body.href}`);
         } else {
@@ -271,7 +272,6 @@ function follow (event) {
         removeIndex = null,
         handle = null,
         to = null,
-        url = 'https://api.twitter.com/1.1/users/show.json',
         db = new nedb(config.nedb);
 
     commands.forEach ( function ( command, index ) {
@@ -282,7 +282,7 @@ function follow (event) {
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
-                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                needle.request('get', twitterUrl, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if ( err ) {
                         bot.say(event.nick,`Error: ${err}`);
                         throw Error(err);
@@ -333,7 +333,6 @@ function unfollow (event) {
         removeIndex = null,
         handle = null,
         to = null,
-        url = 'https://api.twitter.com/1.1/users/show.json',
         db = new nedb(config.nedb);
 
     commands.forEach ( function ( command, index ) {
@@ -344,7 +343,7 @@ function unfollow (event) {
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
-                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                needle.request('get', twitterUrl, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if (err) {
                         bot.say(event.nick,`Error: ${err}`);
                         throw Error(err);
