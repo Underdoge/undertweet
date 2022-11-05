@@ -17,6 +17,8 @@ const
     gecos = config.irc.nick,
     tls = config.irc.tls,
     password = config.irc.pass,
+    dalleUrl = config.dalle.api_url,
+    prompt = null,
     dateOptions = {
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
@@ -27,12 +29,25 @@ const
     },
     htmlKeys = ['&amp;', '&lt;', '&gt;'],
     token = config.twitter.bearer_token,
-    channels = [];
+    channels = [],
+    options_horizontal = {
+        direction:"horizontal",
+        color: 0x00000000,
+        align: 'left', 
+        offset: 5
+    },
+    options_vertical = {
+        direction:"vertical",
+        color: 0x00000000,
+        align: 'left', 
+        offset: 5
+    };
 
 var
     needle = require('needle'),
     commands = [],
-    bot = new IRC.Client();
+    bot = new IRC.Client(),
+    buffer = null;
 
 exports.sayToChannel = function(channel,message) {
     bot.say(channel,message);
@@ -732,36 +747,22 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/\.dalle\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"dalle")) {
-                let
-                    url = config.dalle.api_url,
-                    prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
+                dalleUrl = config.dalle.api_url,
+                prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
                 // check if bot is not handling another call
                 if (!channels[to].running){
                     channels[to].running = true;
                     bot.say(to,`Generating from "${prompt}" prompt...`);
-                    needle.post(url, {prompt: prompt},{json: true}, function(error, response) {
+                    needle.post(dalleUrl, {prompt: prompt},{json: true}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
                             if (!fs.existsSync(path.join(__dirname,'images',to))){
                                 fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
                             }
-
                             for (let i=0; i < response.body.images.length ; i++){
-                                let buffer = Buffer.from(response.body.images[i], "base64");
+                                buffer = Buffer.from(response.body.images[i], "base64");
                                 fs.writeFileSync(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer);
                             }
-                            const options_horizontal = {
-                                direction:"horizontal",
-                                color: 0x00000000,
-                                align: 'left', 
-                                offset: 5
-                            },
-                            options_vertical = {
-                                direction:"vertical",
-                                color: 0x00000000,
-                                align: 'left', 
-                                offset: 5
-                            };
                             // join 9 images into a single 3x3 grid image
                             joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
                                 img.toFile(path.join(__dirname,'images',to,'row1.jpg'));
