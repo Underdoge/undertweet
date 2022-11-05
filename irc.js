@@ -414,7 +414,7 @@ bot.on('connected', async function() {
     } else {
         await joinChannels(db);
     }
-    //stream.startStream(db);
+    stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
