@@ -25,7 +25,6 @@ var
     wait = 60000,
     channels = [],
     stream = null,
-    pipe = null,
     message='',
     screen_names='';
 
@@ -66,14 +65,6 @@ function setStream(val) {
     stream = val;
 }
 
-function getPipe() {
-    return pipe;
-}
-
-function setPipe(val) {
-    return pipe = val;
-}
-
 function getStatusCode() {
     return STATUS_CODE;
 }
@@ -98,7 +89,6 @@ exports.endStream = function() {
     if (getStream()){
         getStream().end();
         getStream().abort();
-        getPipe().destroy();
     }
 };
 
@@ -164,7 +154,6 @@ exports.startStream = function(db) {
                             console.log(`Following rule set: ${following_rule}`);
                             if (getStream()){
                                 getStream().abort();
-                                getPipe().destroy();
                                 getStream().removeAllListeners();
                                 getStream().destroy();
                             }
