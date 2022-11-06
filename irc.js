@@ -47,9 +47,7 @@ const
 var
     needle = require('needle'),
     commands = [],
-    bot = new IRC.Client(),
-    buffer = null,
-    prompt = null;
+    bot = new IRC.Client();
 
 exports.sayToChannel = function(channel,message) {
     bot.say(channel,message);
@@ -132,6 +130,35 @@ ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
             bot.say(to,message);
         }
     }
+}
+
+function deleteImages(to){
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_0.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_0.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_1.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_1.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_2.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_2.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_3.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_3.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_4.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_4.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_5.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_5.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_6.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_6.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_7.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_7.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_8.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_8.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'row1.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'row1.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'row2.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'row2.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'row3.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'row3.jpg'));
+    if(fs.existsSync(path.join(__dirname,'images',to,'dalle.jpg')))
+        fs.unlinkSync(path.join(__dirname,'images',to,'dalle.jpg'));
 }
 
 function postImage(to,from,prompt){
@@ -746,47 +773,46 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/\.dalle\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"dalle")) {
-                prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
+                let prompt = message.slice(message.match(/\.dalle\s.+$/).index+7).trim();
                 // check if bot is not handling another call
                 if (!channels[to].running){
                     channels[to].running = true;
                     bot.say(to,`Generating from "${prompt}" prompt...`);
+                    deleteImages(to);
                     needle.post(dalleUrl, {prompt: prompt},{json: true}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
                             if (!fs.existsSync(path.join(__dirname,'images',to))){
                                 fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
                             }
+                            let buffer = null;
                             for (let i=0; i < response.body.images.length ; i++){
                                 buffer = Buffer.from(response.body.images[i], "base64");
                                 fs.writeFileSync(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer);
                             }
-                            // join 9 images into a single 3x3 grid image
-                            joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
-                                img.toFile(path.join(__dirname,'images',to,'row1.jpg'));
-                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
-                                    img.toFile(path.join(__dirname,'images',to,'row2.jpg'));
-                                    joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
-                                        img.toFile(path.join(__dirname,'images',to,'row3.jpg'));
-                                        setTimeout(function(){
-                                            try {
-                                                joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
-                                                    try {
-                                                        img.toFile(path.join(__dirname,'images',to,'dalle.jpg'));
-                                                        setTimeout(function(){postImage(to,from,prompt)},2000);
-                                                    } catch (error) {
-                                                        channels[to].running = false;
-                                                        bot.say(to,`Error joining dalle images into final image.`);                    
-                                                    }
+                            try {
+                                // join 9 images into a single 3x3 grid image
+                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
+                                    img.toFile(path.join(__dirname,'images',to,'row1.jpg'),(err,info) =>{
+                                        joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
+                                            img.toFile(path.join(__dirname,'images',to,'row2.jpg'),(err,info) => {
+                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
+                                                    img.toFile(path.join(__dirname,'images',to,'row3.jpg'),(err,info) => {
+                                                        joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
+                                                            img.toFile(path.join(__dirname,'images',to,'dalle.jpg'),(err,info) => {
+                                                                postImage(to,from,prompt);
+                                                            });
+                                                        });
+                                                    });
                                                 });
-                                            } catch (error) {
-                                                channels[to].running = false;
-                                                bot.say(to,`Error calling dalle join images.`);
-                                            }
-                                        },2000);
+                                            });
+                                        });
                                     });
                                 });
-                            });
+                            } catch (error) {
+                                channels[to].running = false;
+                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                            }
                         } else {
                             if (response.statusCode == 524){
                                 bot.say(from,`@${from} Dall-E Service is too Busy. Please try again later...`);
