@@ -2,6 +2,7 @@
 
 const
     joinImages = require("join-images"),
+    needle = require('needle'),
     fs = require("fs"),
     packageInf = require('./package'),
     IRC = require('irc-framework'),
@@ -20,6 +21,8 @@ const
     dalleUrl = config.dalle.api_url,
     ghettyUrl = config.ghetty.url,
     twitterUrl = 'https://api.twitter.com/1.1/users/show.json',
+    openAIAPIUrl = config.openAI.api_url,
+    openAIAPIToken = config.openAI.api_key,
     dateOptions = {
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
@@ -45,7 +48,6 @@ const
     };
 
 var
-    needle = require('needle'),
     commands = [],
     bot = new IRC.Client();
 
@@ -161,6 +163,11 @@ function deleteImages(to){
         fs.unlinkSync(path.join(__dirname,'images',to,'dalle.jpg'));
 }
 
+function deleteOpenAIImage(to){
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle.png')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle.png'));
+}
+
 function postImage(to,from,prompt){
     let data = {
             image:{
@@ -180,6 +187,27 @@ function postImage(to,from,prompt){
         }
     });
     channels[to].running = false;
+}
+
+function postOpenAIImage(to,from,prompt){
+    let data = {
+            image:{
+                file: path.join(__dirname,'openaiimages',to,'openaidalle.png'),
+                content_type: 'image/png'
+            }
+        },
+        options = {
+            multipart:true,
+            json:true
+        };
+    needle.post(ghettyUrl, data, options, function(error, response, body) {
+        if (!error && response.statusCode == 200){
+            bot.say(to,`@${from} here you go: "${prompt}" ${body.href}`);
+        } else {
+            bot.say(to,`Ghetty error ${response.statusCode}: ${error}!.`);
+        }
+    });
+    channels[to].openairunning = false;
 }
 
 function modules (event) {
@@ -409,6 +437,7 @@ function joinChannels(db){
             allRecords.forEach( record => {
                 bot.join(record.channel);
                 channels[record.channel] = { running: false };
+                channels[record.channel] = { openairunning: false };
             });
             resolve(channels);
         });
@@ -427,6 +456,7 @@ bot.on('invite', function(event) {
     if ( config.irc.ignoreHostnames.indexOf(hostname) === -1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1 && event.channel.indexOf(to) >= 0 ) {
         channels.push(event.channel);
         channels[event.channel] = { running: false };
+        channels[event.channel] = { openairunning: false };
         bot.join(event.channel);
     }
 });
@@ -437,6 +467,7 @@ bot.on('connected', async function() {
         config.irc.channels.forEach( channel => {
             bot.join(channel);
             channels[channel] = { running: false };
+            channels[channel] = { openairunning: false };
         });
     } else {
         await joinChannels(db);
@@ -676,11 +707,11 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai"){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,enable);
             } else {
-                bot.say(from,'Module not found');
+                bot.say(from,`Module '${module}' not found`);
             }
         } else
         if ( message.match(/^\.disable\s\w+(\s\w+)*$/)) {
@@ -688,11 +719,11 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai"){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,disable);
             } else {
-                bot.say(from,'Module not found');
+                bot.say(from,`Module '${module}'not found`);
             }
         }else
         if (message.match(/^\.follow\s@?\w+$/)) {
@@ -829,13 +860,56 @@ bot.on('message', async function(event) {
                 bot.say(from,`The 'dalle' module is not enabled in ${to}.`);
             }
         } else
+        if (message.match(/\.openai\s.+$/)) {
+            if (await isModuleEnabledInChannel(to,"openai")) {
+                let prompt = message.slice(message.match(/\.openai\s.+$/).index+8).trim();
+                let data = {
+                    "prompt": prompt,
+                    "user": "root@echapa.space",
+                    "response_format": "b64_json"
+                }
+                // check if bot is not handling another call
+                if (!channels[to].openairunning){
+                    channels[to].openairunning = true;
+                    bot.say(to,`Generating from "${prompt}" prompt...`);
+                    deleteOpenAIImage(to);
+                    needle.post(openAIAPIUrl, data, {headers: {"Content-Type": "application/json","Authorization": `Bearer ${openAIAPIToken}`}},function (error,response){
+                        if (!error && response.statusCode == 200){
+                            // save 9 images
+                            if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
+                                fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
+                            }
+                            let buffer = null;
+                            for (let i=0; i < response.body.data.length ; i++){
+                                buffer = Buffer.from(response.body.data[i].b64_json, "base64");
+                                console.log("Creating image...");
+                                fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle.png`), buffer, "base64");
+                                console.log("Completed creating image...");
+                            }
+                            postOpenAIImage(to,from,prompt);
+                        } else {
+                            if (response.statusCode == 524){
+                                bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                            } else {
+                                bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                            }
+                            channels[to].openairunning = false;
+                        }
+                    });
+                } else {
+                    bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                }
+            } else {
+                bot.say(from,`The 'openai' module is not enabled in ${to}.`);
+            }
+        } else
         // if message is .help
         if (message.match(/^\.help$/)) {
             bot.say(from,'Usage:');
             setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read'.`);},1000);
+            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
