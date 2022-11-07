@@ -8,7 +8,7 @@ const
     IRC = require('irc-framework'),
     colors = require('irc-colors'),
     config = require('./config'),
-    stream = require('./streamv2'),
+    //stream = require('./streamv2'),
     path = require('path'),
     nedb = require('nedb'),
     host = config.irc.host,
@@ -472,7 +472,7 @@ bot.on('connected', async function() {
     } else {
         await joinChannels(db);
     }
-    stream.startStream(db);
+    //stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
