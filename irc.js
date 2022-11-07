@@ -882,9 +882,7 @@ bot.on('message', async function(event) {
                             let buffer = null;
                             for (let i=0; i < response.body.data.length ; i++){
                                 buffer = Buffer.from(response.body.data[i].b64_json, "base64");
-                                console.log("Creating image...");
                                 fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle.png`), buffer, "base64");
-                                console.log("Completed creating image...");
                             }
                             postOpenAIImage(to,from,prompt);
                         } else {
