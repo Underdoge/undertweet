@@ -298,7 +298,7 @@ exports.startStream = function(db) {
                                 getStream().destroy();
                             }
                             let
-                                p = new streamReader(),          
+                                p = new streamReader(),
                                 stream = needle.get(streamURL, {
                                     headers: {
                                         "User-Agent": "v2FilterStreamJS",

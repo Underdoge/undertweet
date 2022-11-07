@@ -1,6 +1,7 @@
 'use strict';
 
 const
+    needle = require('needle'),
     irc = require('./irc'),
     colors = require('irc-colors'),
     config = require('./config'),
@@ -19,7 +20,6 @@ const
     token = config.twitter.bearer_token;
 
 var
-    needle = require('needle'),
     STATUS_CODE = '',
     longwait = 960000,
     wait = 60000,
