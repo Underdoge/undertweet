@@ -8,7 +8,7 @@ const
     IRC = require('irc-framework'),
     colors = require('irc-colors'),
     config = require('./config'),
-    //stream = require('./streamv2'),
+    stream = require('./streamv2'),
     path = require('path'),
     nedb = require('nedb'),
     host = config.irc.host,
@@ -164,8 +164,14 @@ function deleteImages(to){
 }
 
 function deleteOpenAIImage(to){
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle.png')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle.png'));
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_0.png')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'));
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_1.png')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_1.png'));
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_2.png')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_2.png'));
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle.jpg')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'));
 }
 
 function postImage(to,from,prompt){
@@ -192,8 +198,8 @@ function postImage(to,from,prompt){
 function postOpenAIImage(to,from,prompt){
     let data = {
             image:{
-                file: path.join(__dirname,'openaiimages',to,'openaidalle.png'),
-                content_type: 'image/png'
+                file: path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),
+                content_type: 'image/jpg'
             }
         },
         options = {
@@ -472,7 +478,7 @@ bot.on('connected', async function() {
     } else {
         await joinChannels(db);
     }
-    //stream.startStream(db);
+    stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
@@ -865,8 +871,10 @@ bot.on('message', async function(event) {
                 let prompt = message.slice(message.match(/\.openai\s.+$/).index+8).trim();
                 let data = {
                     "prompt": prompt,
+                    "n": 3,
                     "user": "root@echapa.space",
-                    "response_format": "b64_json"
+                    "response_format": "b64_json",
+                    "size": "512x512"
                 }
                 // check if bot is not handling another call
                 if (!channels[to].openairunning){
@@ -882,9 +890,20 @@ bot.on('message', async function(event) {
                             let buffer = null;
                             for (let i=0; i < response.body.data.length ; i++){
                                 buffer = Buffer.from(response.body.data[i].b64_json, "base64");
-                                fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle.png`), buffer, "base64");
+                                fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
                             }
-                            postOpenAIImage(to,from,prompt);
+                            try {
+                                // join 3 images into a single row
+                                joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                    img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                        postOpenAIImage(to,from,prompt);
+                                    });
+                                });
+                            } catch (error) {
+                                channels[to].running = false;
+                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                            }
+                            
                         } else {
                             if (response.statusCode == 524){
                                 bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
