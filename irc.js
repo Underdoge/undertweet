@@ -874,7 +874,7 @@ bot.on('message', async function(event) {
                     "n": 3,
                     "user": "root@echapa.space",
                     "response_format": "b64_json",
-                    "size": "512x512"
+                    "size": "256x256"
                 }
                 // check if bot is not handling another call
                 if (!channels[to].openairunning){
