@@ -874,7 +874,7 @@ bot.on('message', async function(event) {
                     "n": 3,
                     "user": "root@echapa.space",
                     "response_format": "b64_json",
-                    "size": "256x256"
+                    "size": "512x512"
                 }
                 // check if bot is not handling another call
                 if (!channels[to].openairunning){
@@ -900,7 +900,7 @@ bot.on('message', async function(event) {
                                     });
                                 });
                             } catch (error) {
-                                channels[to].running = false;
+                                channels[to].openairunning = false;
                                 bot.say(to,`Error joining dalle images into final image: ${error}`);
                             }
                             
