@@ -29,12 +29,8 @@ var
     screen_names='';
 
 function getUnixTimeDifference(unixTime){
-    let difference = unixTime - Math.floor(Date.now()/1000);
-
-    let minutesDifference = Math.floor(difference/60);
-    console.log("Minutes: " + minutesDifference);
-
-    return minutesDifference;
+    let difference = unixTime - Math.floor(Date.now()/1000);    
+    return Math.floor(difference/60);;
 }
 
 function unescape(char) {
