@@ -228,24 +228,23 @@ async function postOpenAIImage(to,from,prompt){
     channels[to].openairunning = false;
 }
 
-function postOpenAIImageVariation(to,from){
-    let data = {
-            image:{
-                file: path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),
-                content_type: 'image/jpg'
-            }
-        },
+async function postOpenAIImageVariation(to,from){
+    let data = null,
+        urls = "",
         options = {
             multipart:true,
             json:true
         };
-    needle.post(ghettyUrl, data, options, function(error, response, body) {
-        if (!error && response.statusCode == 200){
-            bot.say(to,`@${from} here you go: ${body.href}`);
-        } else {
-            bot.say(to,`Ghetty error ${response.statusCode}: ${error}!.`);
-        }
-    });
+    for (let i = 0; i < 3; i++){
+        data = {
+            image:{
+                file: path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`),
+                content_type: 'image/png'
+            }
+        };
+        urls += `${i+1}) ${await getImageURL(data, options)} `;
+    }
+    bot.say(to,`@${from} here you go: ${urls}`);
     channels[to].openairunning = false;
 }
 
@@ -905,7 +904,7 @@ bot.on('message', async function(event) {
                     let url = message.slice(message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/).index+8).trim();
                     if (!channels[to].openairunning){
                         channels[to].openairunning = true;
-                        bot.say(to,`Generating variation...`);
+                        bot.say(to,`Generating variations...`);
                         deleteOpenAIImage(to);
                         needle.get(url, (err, res) => {
                             if (!err && res.statusCode == 200) {
@@ -930,17 +929,7 @@ bot.on('message', async function(event) {
                                             buffer = Buffer.from(response.body.data[i].b64_json, "base64");
                                             fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
                                         }
-                                        try {
-                                            // join 3 images into a single row
-                                            joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
-                                                img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
-                                                    postOpenAIImageVariation(to,from);
-                                                });
-                                            });
-                                        } catch (error) {
-                                            channels[to].openairunning = false;
-                                            bot.say(to,`Error joining OpenAI Dall-E images into final image: ${error}`);
-                                        }
+                                        postOpenAIImageVariation(to,from);
                                     } else {
                                         if (response.statusCode == 524){
                                             bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
