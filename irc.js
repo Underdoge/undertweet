@@ -232,7 +232,7 @@ async function postOpenAIImage(to,from,prompt){
             content_type: 'image/jpg'
         }
     };
-    urls += `1+2+3 => ${await getImageURL(data, options)} `;
+    urls += `1+2+3) ${await getImageURL(data, options)} `;
     bot.say(to,`@${from} here you go "${prompt}": ${urls}`);
     channels[to].openairunning = false;
 }
@@ -259,7 +259,7 @@ async function postOpenAIImageVariation(to,from){
             content_type: 'image/jpg'
         }
     };
-    urls += `1+2+3 => ${await getImageURL(data, options)}`;
+    urls += `1+2+3) ${await getImageURL(data, options)}`;
     bot.say(to,`@${from} here you go: ${urls}`);
     channels[to].openairunning = false;
 }
