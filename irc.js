@@ -913,7 +913,6 @@ bot.on('message', async function(event) {
                                         content_type: "image/png"
                                     },
                                     "n": 3,
-                                    "user": "root@echapa.space",
                                     "response_format": "b64_json",
                                     "size": "512x512"
                                 }
@@ -973,7 +972,6 @@ bot.on('message', async function(event) {
                                             content_type: "image/png"
                                         },
                                         "n": 3,
-                                        "user": "root@echapa.space",
                                         "response_format": "b64_json",
                                         "size": "512x512"
                                     }
@@ -1018,7 +1016,6 @@ bot.on('message', async function(event) {
                                 data = {
                                 "prompt": prompt,
                                 "n": 3,
-                                "user": "root@echapa.space",
                                 "response_format": "b64_json",
                                 "size": "512x512"
                             }
