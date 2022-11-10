@@ -173,6 +173,8 @@ function deleteOpenAIImage(to){
     fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_1.png'));
     if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_2.png')))
     fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_2.png'));
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle.jpg')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'));
 }
 
 function postImage(to,from,prompt){
@@ -224,6 +226,13 @@ async function postOpenAIImage(to,from,prompt){
         };
         urls += `${i+1}) ${await getImageURL(data, options)} `;
     }
+    data = {
+        image:{
+            file: path.join(__dirname,'openaiimages',to,`openaidalle.jpg`),
+            content_type: 'image/jpg'
+        }
+    };
+    urls += `1+2+3 => ${await getImageURL(data, options)} `;
     bot.say(to,`@${from} here you go "${prompt}": ${urls}`);
     channels[to].openairunning = false;
 }
@@ -244,6 +253,13 @@ async function postOpenAIImageVariation(to,from){
         };
         urls += `${i+1}) ${await getImageURL(data, options)} `;
     }
+    data = {
+        image:{
+            file: path.join(__dirname,'openaiimages',to,`openaidalle.jpg`),
+            content_type: 'image/jpg'
+        }
+    };
+    urls += `1+2+3 => ${await getImageURL(data, options)}`;
     bot.say(to,`@${from} here you go: ${urls}`);
     channels[to].openairunning = false;
 }
@@ -929,7 +945,17 @@ bot.on('message', async function(event) {
                                             buffer = Buffer.from(response.body.data[i].b64_json, "base64");
                                             fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
                                         }
-                                        postOpenAIImageVariation(to,from);
+                                        try {
+                                            // join 3 images into a single row
+                                            joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                                img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                    postOpenAIImageVariation(to,from);
+                                                });
+                                            });
+                                        } catch (error) {
+                                            channels[to].openairunning = false;
+                                            bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                        }
                                     } else {
                                         if (response.statusCode == 524){
                                             bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
@@ -974,7 +1000,17 @@ bot.on('message', async function(event) {
                                         buffer = Buffer.from(response.body.data[i].b64_json, "base64");
                                         fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
                                     }
-                                    postOpenAIImage(to,from,prompt);
+                                    try {
+                                        // join 3 images into a single row
+                                        joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                            img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                postOpenAIImage(to,from,prompt);
+                                            });
+                                        });
+                                    } catch (error) {
+                                        channels[to].openairunning = false;
+                                        bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                    }
                                 } else {
                                     if (response.statusCode == 524){
                                         bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
