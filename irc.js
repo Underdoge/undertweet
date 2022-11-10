@@ -459,7 +459,7 @@ bot.on('invite', function(event) {
         ident=event.ident,
         hostname=event.hostname,
         to=event.channel;
-    if ( config.irc.ignoreHostnames.indexOf(hostname) === -1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1 && event.channel.indexOf(to) >= 0 ) {
+    if ( config.irc.ignoreChannels.indexOf(to) === -1 && config.irc.ignoreHostnames.indexOf(hostname) === -1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1 && event.channel.indexOf(to) >= 0 ) {
         channels.push(event.channel);
         channels[event.channel] = { running: false };
         channels[event.channel] = { openairunning: false };
