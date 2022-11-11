@@ -960,7 +960,7 @@ bot.on('message', async function(event) {
                     } else {
                         //generate image variation by preview image number
                         if (message.match(/\.openai\s[1-3]$/)){
-                            let imageNumber = message.match(/[1-3]$/);
+                            let imageNumber = message.match(/[1-3]$/)[0];
                             if (fs.existsSync(path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`))){
                                 // check if bot is not handling another call
                                 if (!channels[to].openairunning){
