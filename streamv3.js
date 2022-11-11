@@ -226,117 +226,118 @@ exports.startStream = function(db) {
                                         let tweet = null;
                                         try {
                                             tweet = JSON.parse(chunk);
-                                        } catch (e) {
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Unexpected non-JSON object: ${JSON.stringify(chunk)}`);
-                                        }
-                                        if (tweet && tweet.data) {
-                                            let
-                                                id = tweet.data.id,
-                                                url = 'https://api.twitter.com/1.1/statuses/show.json',
-                                                query = {
-                                                    id,
-                                                    'tweet_mode': 'extended',
-                                                };
-                                            needle.request('get', url, query, { headers: { "authorization": `Bearer ${token}`}}, function(err, response, json) {
-                                                if (err) {
-                                                    bot.say(to,`Error: ${err}`);
-                                                    throw Error(err);
-                                                }
-                                                if (!json.errors && json) {                            
-                                                    channels.forEach(function (chan) {
-                                                        screen_names = chan[1].toString().split(',');
-                                                        screen_names.forEach(function (screen_name) {
-                                                            //need to make call to make call to get tweet and insert in json variable
-                                                            if (screen_name == json.user.screen_name) {
-                                                                if (json.retweeted_status) {
-                                                                    if (json.retweeted_status.truncated){
-                                                                        json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.extended_tweet.full_text}`;
-                                                                    } else {
-                                                                        json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.text}`;
-                                                                    }
-                                                                    json.favorite_count = json.retweeted_status.favorite_count;
-                                                                    json.retweet_count = json.retweeted_status.retweet_count;
-                                                                    
-                                                                }
-                                                                if (json.truncated){
-                                                                    json.text = json.extended_tweet.full_text.replace(/\n/g,' ');    
-                                                                } else {
-                                                                    json.text = json.full_text.replace(/\n/g,' ');
-                                                                }
-                                                                htmlKeys.forEach( curr => {
-                                                                    json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
-                                                                });
-                                                                if (json.quoted_status) {
-                                                                    if (json.quoted_status.truncated){
-                                                                        json.quoted_status.text = json.quoted_status.extended_tweet.full_text.replace(/\n/g,' ');    
-                                                                    } else {
-                                                                        if (json.quoted_status.text)
-                                                                            json.quoted_status.text = json.quoted_status.text.replace(/\n/g,' ');
-                                                                        else{
-                                                                            console.log("Empty quoted status text");
-                                                                            json.quoted_status.text = "Empty quoted status text";
+                                            if (tweet && tweet.data) {
+                                                let
+                                                    id = tweet.data.id,
+                                                    url = 'https://api.twitter.com/1.1/statuses/show.json',
+                                                    query = {
+                                                        id,
+                                                        'tweet_mode': 'extended',
+                                                    };
+                                                needle.request('get', url, query, { headers: { "authorization": `Bearer ${token}`}}, function(err, response, json) {
+                                                    if (err) {
+                                                        bot.say(to,`Error: ${err}`);
+                                                        throw Error(err);
+                                                    }
+                                                    if (!json.errors && json) {                            
+                                                        channels.forEach(function (chan) {
+                                                            screen_names = chan[1].toString().split(',');
+                                                            screen_names.forEach(function (screen_name) {
+                                                                //need to make call to make call to get tweet and insert in json variable
+                                                                if (screen_name == json.user.screen_name) {
+                                                                    if (json.retweeted_status) {
+                                                                        if (json.retweeted_status.truncated){
+                                                                            json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.extended_tweet.full_text}`;
+                                                                        } else {
+                                                                            json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.text}`;
                                                                         }
+                                                                        json.favorite_count = json.retweeted_status.favorite_count;
+                                                                        json.retweet_count = json.retweeted_status.retweet_count;
+                                                                        
                                                                     }
-                                                                    json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                                                                    if (json.truncated){
+                                                                        json.text = json.extended_tweet.full_text.replace(/\n/g,' ');    
+                                                                    } else {
+                                                                        json.text = json.full_text.replace(/\n/g,' ');
+                                                                    }
                                                                     htmlKeys.forEach( curr => {
-                                                                        json.quoted_status.text = json.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                                                        json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
                                                                     });
-                                                                    message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
+                                                                    if (json.quoted_status) {
+                                                                        if (json.quoted_status.truncated){
+                                                                            json.quoted_status.text = json.quoted_status.extended_tweet.full_text.replace(/\n/g,' ');    
+                                                                        } else {
+                                                                            if (json.quoted_status.text)
+                                                                                json.quoted_status.text = json.quoted_status.text.replace(/\n/g,' ');
+                                                                            else{
+                                                                                console.log("Empty quoted status text");
+                                                                                json.quoted_status.text = "Empty quoted status text";
+                                                                            }
+                                                                        }
+                                                                        json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                                                                        htmlKeys.forEach( curr => {
+                                                                            json.quoted_status.text = json.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                                                        });
+                                                                        message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)} \
 Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`;
-                                                            // check if message too long for IRC
-                                                                    if (message.length > 350) {
-                                                                        irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
-                                                                        irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
+                                                                // check if message too long for IRC
+                                                                        if (message.length > 350) {
+                                                                            irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
+                                                                            irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
-                                                                        irc.sayToChannel(chan[0],`Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`);
-                                                                        return;
+                                                                            irc.sayToChannel(chan[0],`Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`);
+                                                                            return;
+                                                                        } else {
+                                                                            irc.sayToChannel(chan[0],message);
+                                                                        }
                                                                     } else {
-                                                                        irc.sayToChannel(chan[0],message);
-                                                                    }
-                                                                } else {
-                                                                    message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
+                                                                        message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`;
-                                                                    if (message.length > 350) {
-                                                                        irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
-                                                                        irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
+                                                                        if (message.length > 350) {
+                                                                            irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
+                                                                            irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
-                                                                return;
-                                                                    } else {
-                                                                        irc.sayToChannel(chan[0],message);
+                                                                    return;
+                                                                        } else {
+                                                                            irc.sayToChannel(chan[0],message);
+                                                                        }
                                                                     }
-                                                                }
-                                                            }                                        
+                                                                }                                        
+                                                            });
                                                         });
-                                                    });
-                                                }
-                                            });
+                                                    }
+                                                });
+                                            }
+                                        } catch (e) {
+                                            console.log(`Error: ${e}`);
+                                            console.log(`Chunk: ${JSON.stringify(chunk)}`);
                                         }
                                         // limit notices
-                                        if (tweet.limit) {
+                                        if (tweet && tweet.limit) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
                                         }
                                         // Withheld content notices
-                                        if (tweet.status_withheld) {
+                                        if (tweet && tweet.status_withheld) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Withheld content notice: ${JSON.stringify(tweet.status_withheld,null,'    ')}`);
                                         }
-                                        if (tweet.user_withheld) {
+                                        if (tweet && tweet.user_withheld) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] User withheld notice: ${JSON.stringify(tweet.user_withheld,null,'    ')}`);
                                         }
                                         // Disconnect message
-                                        if (tweet.disconnect) {
+                                        if (tweet && tweet.disconnect) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Disconnect notice: ${JSON.stringify(tweet.disconnect,null,'    ')}`);
                                         }
                                         // Stall warning
-                                        if (tweet.warning) {
+                                        if (tweet && tweet.warning) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stall warning: ${JSON.stringify(tweet.warning,null,'    ')}`);
                                         }
                                     }
