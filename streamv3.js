@@ -223,8 +223,13 @@ exports.startStream = function(db) {
                                 let chunk = null;
                                 if (chunk = this.read()) {
                                     if (chunk != "\r\n") {
-                                        let tweet = JSON.parse(chunk);
-                                        if (tweet.data) {
+                                        let tweet = null;
+                                        try {
+                                            tweet = JSON.parse(chunk);
+                                        } catch (e) {
+                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Unexpected non-JSON object: ${JSON.stringify(chunk)}`);
+                                        }
+                                        if (tweet && tweet.data) {
                                             let
                                                 id = tweet.data.id,
                                                 url = 'https://api.twitter.com/1.1/statuses/show.json',
