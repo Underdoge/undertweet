@@ -966,9 +966,9 @@ bot.on('message', async function(event) {
                                 if (!channels[to].openairunning){
                                     channels[to].openairunning = true;
                                     switch (imageNumber) {
-                                        case 1: bot.say(to,`Generating variations of first image...`); break;
-                                        case 2: bot.say(to,`Generating variations of second image...`); break;
-                                        case 3: bot.say(to,`Generating variations of third image...`); break;
+                                        case "1": bot.say(to,`Generating variations of first image...`); break;
+                                        case "2": bot.say(to,`Generating variations of second image...`); break;
+                                        case "3": bot.say(to,`Generating variations of third image...`); break;
                                     }
                                     let data = {
                                         image: {
