@@ -965,7 +965,7 @@ bot.on('message', async function(event) {
                                 // check if bot is not handling another call
                                 if (!channels[to].openairunning){
                                     channels[to].openairunning = true;
-                                    bot.say(to,`Generating variations...`);
+                                    bot.say(to,`Generating variations of ${imageNumber}...`);
                                     let data = {
                                         image: {
                                             file: path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`),
