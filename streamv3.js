@@ -189,7 +189,7 @@ exports.startStream = function(db) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                     exports.endStream();
-                                    exports.startStream(new nedb(config.nedb));
+                                    exports.startStream(db);
                                 } else
                                 if (getStatusCode() == 406) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
@@ -198,23 +198,23 @@ exports.startStream = function(db) {
                                 if (getStatusCode() == 420) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
-                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
+                                    setTimeout(function() { exports.startStream(db);},getWait());
                                     setWait(2*getWait());
                                 } else 
                                 if (getStatusCode() == 429) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
-                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},(getLongWait()+1)*60*1000);
+                                    setTimeout(function() { exports.startStream(db);},(getLongWait()+1)*60*1000);
                                 } else
                                 if (getStatusCode() == 503) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
-                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},300000);
+                                    setTimeout(function() { exports.startStream(db);},300000);
                                 } else
                                 if (getStatusCode() == 500) {
                                     irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
-                                    setTimeout(function() { exports.startStream(new nedb(config.nedb));},getWait());
+                                    setTimeout(function() { exports.startStream(db);},getWait());
                                     setWait(2*getWait());
                                 } 
         
