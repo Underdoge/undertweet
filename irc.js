@@ -255,7 +255,7 @@ function modules (event) {
             to = command.channel;
             removeIndex = index;
             console.log(JSON.stringify(event));
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
                     bot.say(event.nick, `Enabled modules in ${to}: ${modules}.`);
@@ -282,7 +282,7 @@ function enable (event) {
             module = command.module;
             to = command.channel;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 let doc = { 'channel': to, 'handles':[], 'modules': [ module ] };
                 db.find({ 'channel': to }, function (err, channels) {
                     if (!channels[0]) {
@@ -335,7 +335,7 @@ function disable (event) {
             module = command.module;
             to = command.channel;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 db.find({ 'channel': to }, function (err, channels) {
                     if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1) {
                         channels[0].modules.splice(channels[0].modules.indexOf(module),1);
