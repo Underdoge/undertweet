@@ -5,3 +5,5 @@ openaiimages
 config.json
 undertweet_service.sh
 .DS_Store
+undertweet.sql3
+undertweet.db
