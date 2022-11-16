@@ -480,6 +480,22 @@ function joinChannels(db){
     });
 }
 
+JSON.safeStringify = (obj, indent = 2) => {
+    let cache = [];
+    const retVal = JSON.stringify(
+      obj,
+      (key, value) =>
+        typeof value === "object" && value !== null
+          ? cache.includes(value)
+            ? undefined // Duplicate reference found, discard key
+            : cache.push(value) && value // Store value in our collection
+          : value,
+      indent
+    );
+    cache = null;
+    return retVal;
+};
+
 bot.on('error', function(err) {
     console.log(err);
 });
@@ -624,8 +640,8 @@ bot.on('message', async function(event) {
                     if (message.match(/t\.co\/\w+/)) {
                         // message contains a t.co link
                         message=`https://${message.match(/t\.co\/\w+/)[0]}`;
-                        needle({'url':message,'headers': {'User-Agent': 'needle'}},function(err,response) {
-                            message=response.request.uri.href;
+                        needle.head(message, function(err,res) {
+                            message=res.headers.location;
                             if (message.match(/twitter\.com\/\w+\/status\/\d+/)) {
                                 // it is a valid twitter status url
                                 let

@@ -320,7 +320,7 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
                                         } catch (e) {
                                             console.log(`Error: ${e}`);
                                             console.log(`Chunk: ${JSON.stringify(chunk)}`);
-                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e}`);                                        }
+                                            irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${chunk}`);                                        }
                                         // limit notices
                                         if (tweet && tweet.limit) {
                                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
