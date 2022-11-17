@@ -65,30 +65,6 @@ function getDatabase(){
 function setDatabase(newdb){
     db = newdb;
 }
-    
-function getEnabledModulesInChannel (channel) {
-    return new Promise(resolve => {
-        let db = getDatabase();
-        let modules = null;
-        modules = db.prepare("select * from modules where t_channel_name = ?").all(channel);
-        if (modules != "")
-            resolve(modules);
-        else
-            resolve(null);
-    });
-}
-
-function isModuleEnabledInChannel (channel, module) {
-    return new Promise(resolve => {
-        let db = new nedb(config.nedb);
-        db.find({ 'channel': channel }, function (err, channels) {
-            if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
-                resolve(true);
-            else
-                resolve(false);
-        });
-    });
-}
 
 function unescape(char) {
     return htmlMap[char];
@@ -256,6 +232,33 @@ async function postOpenAIImageVariation(to,from){
     channels[to].openairunning = false;
 }
 
+function getEnabledModulesInChannel (channel) {
+    return new Promise(resolve => {
+        let db = getDatabase();
+        let modules = db.prepare("select t_module_name from modules where t_channel_name = ?");
+        let arrayModules = [];
+        for (const module of modules.iterate(channel)){
+            arrayModules.push(module.t_module_name);
+        }
+        if (arrayModules.length > 0)
+            resolve(arrayModules);
+        else
+            resolve(null);
+    });
+}
+
+function isModuleEnabledInChannel (channel, module) {
+    return new Promise(resolve => {
+        let db = new nedb(config.nedb);
+        db.find({ 'channel': channel }, function (err, channels) {
+            if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
+                resolve(true);
+            else
+                resolve(false);
+        });
+    });
+}
+
 function modules (event) {
     let
         removeIndex = null,
@@ -308,12 +311,11 @@ function enable (event) {
                         bot.say(event.nick,err);
                     }
                 } else {
-                    console.log(`Joined channels: ${joinedchannels}`);
-                    const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
-                    if (modules == undefined && modules.indexOf(module) == -1) {
+                    const modules = db.prepare("select * from modules where t_channel_name = ? and t_module_name = ?").get(to,module);
+                    if (modules == undefined) {
                         const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
                         try {
-                            const join = db.transaction(to => {
+                            const join = db.transaction((to,module) => {
                                 newModule.run(to,module);
                             });
                             join(to,module);
@@ -322,21 +324,7 @@ function enable (event) {
                             bot.say(event.nick,err);
                         }
                     } else {
-                        console.log(`Joined channels: ${joinedchannels}`);
-                        if (modules == undefined) {
-                            const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
-                            try {
-                                const join = db.transaction(to => {
-                                    newModule.run(to,module);
-                                });
-                                join(to,module);
-                                bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
-                            } catch (err) {
-                                bot.say(event.nick,err);
-                            }
-                        } else {
-                            bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
-                        }
+                        bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
                     }
                 }
             } else {
@@ -353,26 +341,29 @@ function disable (event) {
         removeIndex = null,
         module = null,
         to = null,
-        db = new nedb(config.nedb);
+        db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             module = command.module;
             to = command.channel;
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
-                db.find({ 'channel': to }, function (err, channels) {
-                    if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1) {
-                        channels[0].modules.splice(channels[0].modules.indexOf(module),1);
-                        db.update({ 'channel': to }, { $set : { 'modules': channels[0].modules } }, function(err) {
-                            if (err) {
-                                bot.say(event.nick,err);
-                            }
-                            bot.say(event.nick,`Disabled '${module}' module in ${to}`);
+                const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
+                if (modules == undefined && modules.indexOf(module) == -1) {
+                    bot.say(event.nick,`Module '${module}' not enabled in ${to}!`); 
+                        
+                } else {
+                    const disable = db.prepare("delete from modules where t_channel_name = ? and t_module_name = ?");
+                    try {
+                        const disableModule = db.transaction((channel,module) => {
+                            disable.run(channel,module);
                         });
-                    } else {
-                        bot.say(event.nick,`Module '${module}' not enabled in ${to}!`); 
+                        disableModule(to,module);
+                        bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
+                    } catch (err) {
+                        bot.say(event.nick,err);
                     }
-                });
+                }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
                 bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
@@ -387,8 +378,7 @@ function follow (event) {
         removeIndex = null,
         handle = null,
         to = null,
-        db = new nedb(config.nedb);
-
+        db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             handle = command.handle;
@@ -495,15 +485,15 @@ function joinChannels(){
     const db = getDatabase();
     return new Promise ( resolve => {
         const getChannels = db.prepare('select t_channel_name from channels');
-        const allChannels = getChannels.all();
-        if (allChannels != "") {
-            console.log(`Joining channels: ${allChannels}`);
-            allChannels.forEach( record => {
-                bot.join(record.t_channel_name);
-                channels[record.t_channel_name] = { running: false };
-                channels[record.t_channel_name] = { openairunning: false };
-            });
-            resolve(allChannels);
+        let arrayChannels = [];
+        for (const channel of getChannels.iterate()){
+            arrayChannels.push(channel.t_channel_name);
+            bot.join(channel.t_channel_name);
+            channels[channel.t_channel_name] = { running: false };
+            channels[channel.t_channel_name] = { openairunning: false };
+        }
+        if (arrayChannels.length > 0){
+            resolve(arrayChannels);
         } else {
             resolve(null);
         }
@@ -514,12 +504,12 @@ function initDatabase(){
     return new Promise( resolve => {
         if (config?.sqlite3?.filename){
             try {
-                const db = new Database(config.sqlite3.filename, { fileMustExist: true });
+                const db = new Database(config.sqlite3.filename, { verbose: console.log, fileMustExist: true });
                 setDatabase(db);
                 resolve(db);
             } catch (e) {
                 console.log(`${e}. Creating new database file...`);
-                const db = new Database(config.sqlite3.filename);
+                const db = new Database(config.sqlite3.filename, { verbose: console.log });
                 const createDB = fs.readFileSync('create_db.sql', 'utf8');
                 db.exec(createDB);
                 setDatabase(db);
@@ -576,12 +566,12 @@ bot.on('connected', async function() {
     } else {        
         db = await initDatabase();
         if (db) {
-            let channels = await joinChannels();
-            if (!channels){
+            let arrayChannels = await joinChannels();
+            if (!arrayChannels){
                 bot.join("#testing");
                 bot.say("#testing",`No channels to join, joined #testing in the meantime...`);
             } else {
-                console.log(`Joined channels: ${channels[0].t_channel_name}`);
+                console.log(`Joined channels: ${arrayChannels}`);
             }
         }
     }
