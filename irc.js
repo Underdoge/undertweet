@@ -513,9 +513,18 @@ function joinChannels(){
 function initDatabase(){
     return new Promise( resolve => {
         if (config?.sqlite3?.filename){
-            const db = new Database(config.sqlite3.filename, { verbose: console.log, options: "fileMustExist" });
-            setDatabase(db);
-            resolve(db);
+            try {
+                const db = new Database(config.sqlite3.filename, { fileMustExist: true });
+                setDatabase(db);
+                resolve(db);
+            } catch (e) {
+                console.log(`${e}. Creating new database file...`);
+                const db = new Database(config.sqlite3.filename);
+                const createDB = fs.readFileSync('create_db.sql', 'utf8');
+                db.exec(createDB);
+                setDatabase(db);
+                resolve(db);
+            }
         } else {
             console.log(`No database file ${config?.sqlite3?.filename} found!`);
             bot.say("#testing",`No database file ${config?.sqlite3?.filename} found!`);
