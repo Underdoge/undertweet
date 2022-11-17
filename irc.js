@@ -261,23 +261,25 @@ function isModuleEnabledInChannel (channel, module) {
 
 function modules (event) {
     let
+        nick = null,
         removeIndex = null,
         to = null;
     commands.forEach ( async function ( command, index ) {
         if ( command.nick == event.nick ) {
+            nick = event.nick;
             to = command.channel;
             removeIndex = index;
             console.log(JSON.stringify(event));
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
-                    bot.say(event.nick, `Enabled modules in ${to}: ${modules}.`);
+                    bot.say(nick, `Enabled modules in ${to}: ${modules}.`);
                 } else {
-                    bot.say(event.nick, `No modules enabled in ${to}.`);
+                    bot.say(nick, `No modules enabled in ${to}.`);
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -286,12 +288,14 @@ function modules (event) {
 
 function enable (event) {
     let
+        nick = null,
         removeIndex = null,
         module = null,
         to = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
+            nick = event.nick,
             module = command.module;
             to = command.channel;
             removeIndex = index;
@@ -306,9 +310,9 @@ function enable (event) {
                             newModule.run(to,module);
                         });
                         join(to,module);
-                        bot.say(event.nick,`Enabled new '${module}' module in ${to}!`);
+                        bot.say(nick,`Enabled new '${module}' module in ${to}!`);
                     } catch (err) {
-                        bot.say(event.nick,err);
+                        bot.say(nick,err);
                     }
                 } else {
                     const modules = db.prepare("select * from modules where t_channel_name = ? and t_module_name = ?").get(to,module);
@@ -319,17 +323,17 @@ function enable (event) {
                                 newModule.run(to,module);
                             });
                             join(to,module);
-                            bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
+                            bot.say(nick,`Enabled '${module}' module in ${to}!`);
                         } catch (err) {
-                            bot.say(event.nick,err);
+                            bot.say(nick,err);
                         }
                     } else {
-                        bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
+                        bot.say(nick,`Module '${module}' already enabled in ${to}!`);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -338,35 +342,37 @@ function enable (event) {
 
 function disable (event) {
     let
+        nick = null,
         removeIndex = null,
         module = null,
         to = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
+            nick = event.nick,
             module = command.module;
             to = command.channel;
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
-                    bot.say(event.nick,`Module '${module}' not enabled in ${to}!`); 
+                    bot.say(nick,`Module '${module}' not enabled in ${to}!`); 
                         
                 } else {
-                    const disable = db.prepare("delete from modules where t_channel_name = ? and t_module_name = ?");
+                    const disableModule = db.prepare("delete from modules where t_channel_name = ? and t_module_name = ?");
                     try {
-                        const disableModule = db.transaction((channel,module) => {
-                            disable.run(channel,module);
+                        const disable = db.transaction((channel,module) => {
+                            disableModule.run(channel,module);
                         });
-                        disableModule(to,module);
-                        bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
+                        disable(to,module);
+                        bot.say(nick,`Enabled '${module}' module in ${to}!`);
                     } catch (err) {
-                        bot.say(event.nick,err);
+                        bot.say(nick,err);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -375,58 +381,66 @@ function disable (event) {
 
 function follow (event) {
     let
+        nick = null,
         removeIndex = null,
         handle = null,
         to = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
+            nick = event.nick,
             handle = command.handle;
-            let data = { "screen_name" : handle };
             to = command.channel;
+            let data = { "screen_name" : handle };
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
                 needle.request('get', twitterUrl, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if ( err ) {
-                        bot.say(event.nick,`Error: ${err}`);
+                        bot.say(nick,`Error: ${err}`);
                         throw Error(err);
                     }
                     if ( !result.errors && result ) {
                         // add twitter ID
                         // see if it doesn't exist already
-                        let doc = { 'channel': to, 'handles': [ result.screen_name ], 'modules': [] };
-                        db.find({ 'channel': to }, function (err, following) {
-                            if (!following[0]) {
-                                db.insert(doc, function(err) {
-                                    if (err) {
-                                        bot.say(event.nick,err);
-                                    }
-                                    bot.say(event.nick,`Now following ${result.name} in ${to}!`);
-                                    stream.endStream();
+                        const joinedchannels = db.prepare("select * from channels where t_channel_name = ?").get(to);
+                        if (joinedchannels == undefined) {
+                            const newChannel = db.prepare("insert into channels (t_channel_name) values (?)");
+                            const newHandle = db.prepare("insert into handles (t_channel_name, t_module_name) values (?, ?)");
+                            try {
+                                const follow = db.transaction( (to,screen_name) => {
+                                    newChannel.run(to);
+                                    newHandle.run(to,screen_name);
                                 });
-                            } else {
-                                if (following[0].handles && following[0].handles.indexOf(result.screen_name) == -1) {
-                                    following[0].handles.push(result.screen_name);
-                                    db.update({ 'channel': to }, { $set : { 'handles': following[0].handles } }, function(err) {
-                                        if (err) {
-                                            bot.say(event.nick,err);
-                                        }
-                                        bot.say(event.nick,`Now following ${result.name} in ${to}`);
-                                        stream.endStream();
-                                    });
-                                } else {
-                                    bot.say(event.nick,`Already following ${result.name} in ${to}!`);
-                                }
+                                follow(to,result.screen_name);
+                                bot.say(nick,`Now following ${result.name} in ${to}!`);
+                            } catch (err) {
+                                bot.say(nick,err);
                             }
-                        });
+                        } else {
+                            const handles = db.prepare("select * from handles where t_channel_name = ? and t_handle_name = ?").get(to,result.screen_name);
+                            if (handles == undefined) {
+                                const newHandle = db.prepare("insert into handles (t_channel_name, t_handle_name) values (?, ?)");
+                                try {
+                                    const follow = db.transaction((to,screen_name) => {
+                                        newHandle.run(to,screen_name);
+                                    });
+                                    follow(to,result.screen_name);
+                                    bot.say(nick,`Now following ${result.name} in ${to}!`);
+                                } catch (err) {
+                                    bot.say(nick,err);
+                                }
+                            } else {
+                                bot.say(nick,`Already following ${result.name} in ${to}!`);
+                            }
+                        }
                     } else {
-                        bot.say(event.nick,'Tweeter handle not found!.');
+                        bot.say(nick,'Tweeter handle not found!.');
                     }
                 });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -435,46 +449,38 @@ function follow (event) {
 
 function unfollow (event) {
     let
+        nick = null,
         removeIndex = null,
         handle = null,
         to = null,
-        db = new nedb(config.nedb);
-
+        db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
+            nick = event.nick;
             handle = command.handle;
-            let data = { "screen_name" : handle };
             to = command.channel;
             removeIndex = index;
+            let data = { "screen_name" : handle };
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
-                needle.request('get', twitterUrl, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                    if (err) {
-                        bot.say(event.nick,`Error: ${err}`);
-                        throw Error(err);
-                    }
-                    if (!result.errors && result) {
-                        db.find({ 'channel': to }, function (err, following) {
-                            if (following[0] && following[0].handles.indexOf(result.screen_name) != -1) {
-                                following[0].handles.splice(following[0].handles.indexOf(result.screen_name),1);
-                                db.update({ 'channel': to }, { $set : { 'handles': following[0].handles } }, function(err) {
-                                    if (err) {
-                                        bot.say(event.nick,err);
-                                    }
-                                    bot.say(event.nick,`Unfollowed ${result.name} in ${to}!`);
-                                    stream.endStream();
-                                });
-                            } else {
-                                bot.say(event.nick,`Not following ${result.name} in ${to}!`); 
-                            }
+                const following = db.prepare("select t_handle_name from handles where t_channel_name = ? and t_handle_name = ?").get(to,handle);
+                if (following != undefined) {
+                    bot.say(nick,`Not following ${result.name} in ${to}!`); 
+                } else {
+                    const unfollowHandle = db.prepare("delete from handles where t_channel_name = ? and t_module_name = ?");
+                    try {
+                        const unfollow = db.transaction((channel,handle) => {
+                            unfollowHandle.run(channel,handle);
                         });
-                    } else {
-                        bot.say(event.nick,'Twitter handle not found!.');
+                        unfollow(to,handle);
+                        bot.say(nick,`Enabled '${module}' module in ${to}!`);
+                    } catch (err) {
+                        bot.say(nick,err);
                     }
-                });
+                }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
