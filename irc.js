@@ -1,6 +1,7 @@
 'use strict';
 
 const
+    Database = require('better-sqlite3'),
     joinImages = require("join-images"),
     needle = require('needle'),
     fs = require("fs"),
@@ -46,15 +47,24 @@ const
         color: 0x00000000,
         align: 'left', 
         offset: 5
-    };
+    },
+    bot = new IRC.Client();
 
 var
-    commands = [],
-    bot = new IRC.Client();
+    db = null,
+    commands = [];
 
 exports.sayToChannel = function(channel,message) {
     bot.say(channel,message);
 };
+
+function getDatabase(){
+    return db;
+}
+
+function setDatabase(newdb){
+    db = newdb;
+}
     
 function getEnabledModulesInChannel (channel) {
     return new Promise(resolve => {
@@ -276,7 +286,7 @@ function enable (event) {
         removeIndex = null,
         module = null,
         to = null,
-        db = new nedb(config.nedb);
+        db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             module = command.module;
@@ -467,16 +477,33 @@ function unfollow (event) {
     commands.splice(removeIndex,1);
 }
 
-function joinChannels(db){
+function joinChannels(){
+    const db = getDatabase();
     return new Promise ( resolve => {
-        db.find({}, function (err, allRecords) {
+        const getChannels = db.prepare('select * from channels');
+        const allRecords = getChannels.all();
+        if (allRecords != undefined) {
             allRecords.forEach( record => {
                 bot.join(record.channel);
                 channels[record.channel] = { running: false };
                 channels[record.channel] = { openairunning: false };
             });
             resolve(channels);
-        });
+        } else {
+            resolve(null);
+        }
+    });
+}
+
+function initDatabase(){
+    return new Promise( resolve => {
+        if (config?.sqlite3?.filename != undefined ){
+            const db = new Database(config.sqlite3.filename, { verbose: console.log });
+            setDatabase(db);
+            resolve(db);
+        } else {
+            resolve(null);
+        }
     });
 }
 
@@ -514,17 +541,25 @@ bot.on('invite', function(event) {
 });
 
 bot.on('connected', async function() {
-    let db = new nedb(config.nedb);
     if (process.env.TESTING == "true") {
         config.irc.channels.forEach( channel => {
             bot.join(channel);
             channels[channel] = { running: false };
             channels[channel] = { openairunning: false };
         });
-    } else {
-        await joinChannels(db);
+    } else {        
+        db = await initDatabase();
+        if (db) {
+            let channels = await joinChannels();
+            if (!channels){
+                bot.join("#testing");
+                bot.say("#testing",`No channels to join, joined #testing in the meantime...`);
+            } else {
+                console.log(`Joined channels: ${channels}`);
+            }
+        }
     }
-    stream.startStream(db);
+    //stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
