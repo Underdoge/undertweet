@@ -1,9 +1,6 @@
-undertweet_new.db
+undertweet*
 node_modules
 images
 openaiimages
 config.json
-undertweet_service.sh
 .DS_Store
-undertweet.sql3
-undertweet.db
