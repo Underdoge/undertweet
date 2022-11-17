@@ -68,13 +68,13 @@ function setDatabase(newdb){
     
 function getEnabledModulesInChannel (channel) {
     return new Promise(resolve => {
-        let db = new nedb(config.nedb);
-        db.find({ 'channel': channel }, function (err, channels) {
-            if (channels[0] && channels[0].modules)
-                resolve(channels[0].modules);
-            else
-                resolve(false);
-        });
+        let db = getDatabase();
+        let modules = null;
+        modules = db.prepare("select * from modules where t_channel_name = ?").all(channel);
+        if (modules != "")
+            resolve(modules);
+        else
+            resolve(null);
     });
 }
 
@@ -293,38 +293,52 @@ function enable (event) {
             to = command.channel;
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
-                let doc = { 'channel': to, 'handles':[], 'modules': [ module ] };
-                db.find({ 'channel': to }, function (err, channels) {
-                    if (!channels[0]) {
-                        db.insert(doc, function(err) {
-                            if (err) {
+                const joinedchannels = db.prepare("select * from channels where t_channel_name = ?").get(to);
+                if (joinedchannels == undefined) {
+                    const newChannel = db.prepare("insert into channels (t_channel_name) values (?)");
+                    const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
+                    try {
+                        const join = db.transaction( (to,module) => {
+                            newChannel.run(to);
+                            newModule.run(to,module);
+                        });
+                        join(to,module);
+                        bot.say(event.nick,`Enabled new '${module}' module in ${to}!`);
+                    } catch (err) {
+                        bot.say(event.nick,err);
+                    }
+                } else {
+                    console.log(`Joined channels: ${joinedchannels}`);
+                    const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
+                    if (modules == undefined && modules.indexOf(module) == -1) {
+                        const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
+                        try {
+                            const join = db.transaction(to => {
+                                newModule.run(to,module);
+                            });
+                            join(to,module);
+                            bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
+                        } catch (err) {
+                            bot.say(event.nick,err);
+                        }
+                    } else {
+                        console.log(`Joined channels: ${joinedchannels}`);
+                        if (modules == undefined) {
+                            const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
+                            try {
+                                const join = db.transaction(to => {
+                                    newModule.run(to,module);
+                                });
+                                join(to,module);
+                                bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
+                            } catch (err) {
                                 bot.say(event.nick,err);
                             }
-                            bot.say(event.nick,`Enabled '${module}' module in ${to}!`);
-                        });
-                    } else {
-                        if (channels[0].modules && channels[0].modules.indexOf(module) == -1) {
-                            channels[0].modules.push(module);
-                            db.update({ 'channel': to }, { $set : { 'modules': channels[0].modules } }, function(err) {
-                                if (err) {
-                                    bot.say(event.nick,err);
-                                }
-                                bot.say(event.nick,`Enabled '${module}' module in ${to}`);
-                            });
                         } else {
-                            if (channels[0] && !channels[0].modules) {
-                                db.update({ 'channel': to }, { $set : { 'modules': [module] } }, function(err) {
-                                    if (err) {
-                                        bot.say(event.nick,err);
-                                    }
-                                    bot.say(event.nick,`Enabled '${module}' module in ${to}`);
-                                });
-                            } else {
-                                bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
-                            }
+                            bot.say(event.nick,`Module '${module}' already enabled in ${to}!`);
                         }
                     }
-                });
+                }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
                 bot.say(event.nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
@@ -480,15 +494,16 @@ function unfollow (event) {
 function joinChannels(){
     const db = getDatabase();
     return new Promise ( resolve => {
-        const getChannels = db.prepare('select * from channels');
-        const allRecords = getChannels.all();
-        if (allRecords != undefined) {
-            allRecords.forEach( record => {
-                bot.join(record.channel);
-                channels[record.channel] = { running: false };
-                channels[record.channel] = { openairunning: false };
+        const getChannels = db.prepare('select t_channel_name from channels');
+        const allChannels = getChannels.all();
+        if (allChannels != undefined) {
+            console.log(allChannels)
+            allChannels.forEach( record => {
+                bot.join(record.t_channel_name);
+                channels[record.t_channel_name] = { running: false };
+                channels[record.t_channel_name] = { openairunning: false };
             });
-            resolve(channels);
+            resolve(allChannels);
         } else {
             resolve(null);
         }
@@ -498,7 +513,7 @@ function joinChannels(){
 function initDatabase(){
     return new Promise( resolve => {
         if (config?.sqlite3?.filename != undefined ){
-            const db = new Database(config.sqlite3.filename, { verbose: console.log });
+            const db = new Database(config.sqlite3.filename, { verbose: console.log, options: "fileMustExist" });
             setDatabase(db);
             resolve(db);
         } else {
@@ -555,7 +570,7 @@ bot.on('connected', async function() {
                 bot.join("#testing");
                 bot.say("#testing",`No channels to join, joined #testing in the meantime...`);
             } else {
-                console.log(`Joined channels: ${channels}`);
+                console.log(`Joined channels: ${channels[0].t_channel_name}`);
             }
         }
     }
