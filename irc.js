@@ -496,8 +496,8 @@ function joinChannels(){
     return new Promise ( resolve => {
         const getChannels = db.prepare('select t_channel_name from channels');
         const allChannels = getChannels.all();
-        if (allChannels != undefined) {
-            console.log(allChannels)
+        if (allChannels != "") {
+            console.log(`Joining channels: ${allChannels}`);
             allChannels.forEach( record => {
                 bot.join(record.t_channel_name);
                 channels[record.t_channel_name] = { running: false };
@@ -512,11 +512,13 @@ function joinChannels(){
 
 function initDatabase(){
     return new Promise( resolve => {
-        if (config?.sqlite3?.filename != undefined ){
+        if (config?.sqlite3?.filename){
             const db = new Database(config.sqlite3.filename, { verbose: console.log, options: "fileMustExist" });
             setDatabase(db);
             resolve(db);
         } else {
+            console.log(`No database file ${config?.sqlite3?.filename} found!`);
+            bot.say("#testing",`No database file ${config?.sqlite3?.filename} found!`);
             resolve(null);
         }
     });
