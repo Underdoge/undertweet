@@ -886,7 +886,7 @@ bot.on('message', async function(event) {
                         let
                             url = 'https://api.twitter.com/1.1/users/lookup.json',
                             data = {
-                                'screen_name': following_handles,
+                                'screen_name': following_handles.toString(),
                             };
                         needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                             if (err) {
