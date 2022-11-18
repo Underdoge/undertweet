@@ -249,13 +249,13 @@ exports.startStream = function(db) {
                                                     throw Error(err);
                                                 }
                                                 if (!json.errors && json) {        
-                                                    console.log(channels);                    
+                                                    console.log(`Channels: ${channels}`);
                                                     channels.forEach(function (chan) {
+                                                        console.log(`Channel: ${chan}`);
                                                         try{
                                                             screen_names = chan[1].toString().split(',');
                                                         } catch (e) {
                                                             console.log(`Error: ${e}`);
-                                                            console.log(chan);
                                                             screen_names = [];
                                                         }
                                                         screen_names.forEach(function (screen_name) {
