@@ -367,7 +367,7 @@ function disable (event) {
                             disableModule.run(channel,module);
                         });
                         disable(to,module);
-                        bot.say(nick,`Enabled '${module}' module in ${to}!`);
+                        bot.say(nick,`Disabled '${module}' module in ${to}!`);
                     } catch (err) {
                         bot.say(nick,err);
                     }
