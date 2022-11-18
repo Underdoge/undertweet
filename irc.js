@@ -11,7 +11,6 @@ const
     config = require('./config'),
     stream = require('./streamv3'),
     path = require('path'),
-    nedb = require('nedb'),
     host = config.irc.host,
     port = config.irc.port,
     nick = config.irc.nick,
@@ -249,13 +248,16 @@ function getEnabledModulesInChannel (channel) {
 
 function isModuleEnabledInChannel (channel, module) {
     return new Promise(resolve => {
-        let db = new nedb(config.nedb);
-        db.find({ 'channel': channel }, function (err, channels) {
-            if (channels[0] && channels[0].modules && channels[0].modules.indexOf(module) != -1)
-                resolve(true);
-            else
-                resolve(false);
-        });
+        let db = getDatabase();
+        const modules = db.prepare("select t_module_name from modules where t_channel_name = ?");
+        let arrayModules = [];
+        for (const module of modules.iterate(channel)){
+            arrayModules.push(module.t_module_name);
+        }
+        if (arrayModules.length > 0 && arrayModules.indexOf(module) != -1)
+            resolve(true);
+        else
+            resolve(false);
     });
 }
 
@@ -464,16 +466,16 @@ function unfollow (event) {
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
                 const following = db.prepare("select t_handle_name from handles where t_channel_name = ? and t_handle_name = ?").get(to,handle);
-                if (following != undefined) {
-                    bot.say(nick,`Not following ${result.name} in ${to}!`); 
+                if (following == undefined) {
+                    bot.say(nick,`Not following ${handle} in ${to}!`); 
                 } else {
-                    const unfollowHandle = db.prepare("delete from handles where t_channel_name = ? and t_module_name = ?");
+                    const unfollowHandle = db.prepare("delete from handles where t_channel_name = ? and t_handle_name = ?");
                     try {
                         const unfollow = db.transaction((channel,handle) => {
                             unfollowHandle.run(channel,handle);
                         });
                         unfollow(to,handle);
-                        bot.say(nick,`Enabled '${module}' module in ${to}!`);
+                        bot.say(nick,`Unfollowed @${handle} in ${to}!`);
                     } catch (err) {
                         bot.say(nick,err);
                     }
@@ -872,39 +874,39 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/^\.following$/)) {
             if (await isModuleEnabledInChannel(to,"twitter follow")) {
-                let db = new nedb(config.nedb);
-
+                let db = getDatabase();
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-
-                    db.find({ 'channel': to }, function (err, following) {
-                        if (following[0] && following[0].handles) {
-                            let
-                                following_handles = following[0].handles.toString(),
-                                url = 'https://api.twitter.com/1.1/users/lookup.json',
-                                data = {
-                                    'screen_name': following_handles,
-                                };
-                            needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                                if (err) {
-                                    bot.say(from,`Error: ${err}`);
-                                    throw Error(err);
-                                }
-                                if (!result.errors && result) {
-                                    let accounts=`${result[0].name} (@${result[0].screen_name})`;
-                                    result.forEach( function (current,index) {
-                                        if (index>0)
-                                            accounts+=`, ${current.name} (@${current.screen_name})`;
-                                    });
-                                    bot.say(from,`Following: ${accounts} in ${to}.`);
-                                } else {
-                                    bot.say(from,`Not following anyone in ${to} yet!.`);
-                                }
-                            });
-
-                        } else {
-                            bot.say(from,`Not following anyone in ${to} yet!.`); 
-                        }
-                    });
+                    const following = db.prepare("select * from handles where t_channel_name = ?");
+                    let following_handles = [];
+                    for (const handle of following.iterate(to)){
+                        following_handles.push(handle.t_handle_name);
+                    }
+                    if (following_handles.length > 0){
+                        console.log(`Following handles: ${following_handles}`);
+                        let
+                            url = 'https://api.twitter.com/1.1/users/lookup.json',
+                            data = {
+                                'screen_name': following_handles,
+                            };
+                        needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
+                            if (err) {
+                                bot.say(from,`Error: ${err}`);
+                                throw Error(err);
+                            }
+                            if (!result.errors && result) {
+                                let accounts=`${result[0].name} (@${result[0].screen_name})`;
+                                result.forEach( function (current,index) {
+                                    if (index>0)
+                                        accounts+=`, ${current.name} (@${current.screen_name})`;
+                                });
+                                bot.say(from,`Following: ${accounts} in ${to}.`);
+                            } else {
+                                bot.say(from,`Not following anyone in ${to} yet!.`);
+                            }
+                        });
+                    } else {
+                        bot.say(from,`Not following anyone in ${to} yet!.`); 
+                    }
                 } else // No auth data, ask user to authenticate bot
                     bot.say(from,'No auth data.');
             } else {
