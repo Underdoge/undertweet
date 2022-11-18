@@ -429,6 +429,7 @@ function follow (event) {
                                     });
                                     follow(to,result.screen_name);
                                     bot.say(nick,`Now following ${result.name} in ${to}!`);
+                                    stream.endStream();
                                 } catch (err) {
                                     bot.say(nick,err);
                                 }
@@ -476,6 +477,7 @@ function unfollow (event) {
                         });
                         unfollow(to,handle);
                         bot.say(nick,`Unfollowed @${handle} in ${to}!`);
+                        stream.endStream();
                     } catch (err) {
                         bot.say(nick,err);
                     }
@@ -583,7 +585,7 @@ bot.on('connected', async function() {
             }
         }
     }
-    //stream.startStream(db);
+    stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
