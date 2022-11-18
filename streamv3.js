@@ -248,9 +248,16 @@ exports.startStream = function(db) {
                                                     bot.say(to,`Error: ${err}`);
                                                     throw Error(err);
                                                 }
-                                                if (!json.errors && json) {                            
+                                                if (!json.errors && json) {        
+                                                    console.log(channels);                    
                                                     channels.forEach(function (chan) {
-                                                        screen_names = chan[1].toString().split(',');
+                                                        try{
+                                                            screen_names = chan[1].toString().split(',');
+                                                        } catch (e) {
+                                                            console.log(`Error: ${e}`);
+                                                            console.log(chan);
+                                                            screen_names = [];
+                                                        }
                                                         screen_names.forEach(function (screen_name) {
                                                             //need to make call to make call to get tweet and insert in json variable
                                                             if (screen_name == json.user.screen_name) {
