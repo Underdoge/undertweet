@@ -112,7 +112,6 @@ exports.startStream = function(db) {
             if (ids) {
                  rules = await deleteFolowingRules(data);
             }
-            console.log (rules);
             const allChannels = db.prepare("select * from channels");
             const arrayChannels = [];
             for (const channel of allChannels.iterate()){
@@ -128,8 +127,8 @@ exports.startStream = function(db) {
                 for (const handle of following.iterate(channel)){
                     following_handles.push(handle.t_handle_name);
                 }
+                channels[index].push(following_handles);
                 if (following_handles.length > 0){
-                    channels[index].push(following_handles);
                     following_handles.forEach(function (nick) {
                         if (following_nicks.indexOf(nick) === -1)
                             following_nicks.push(nick);

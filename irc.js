@@ -567,14 +567,14 @@ bot.on('invite', function(event) {
 });
 
 bot.on('connected', async function() {
+    db = await initDatabase();
     if (process.env.TESTING == "true") {
         config.irc.channels.forEach( channel => {
             bot.join(channel);
             channels[channel] = { running: false };
             channels[channel] = { openairunning: false };
         });
-    } else {        
-        db = await initDatabase();
+    } else {
         if (db) {
             let arrayChannels = await joinChannels();
             if (!arrayChannels){
@@ -583,6 +583,8 @@ bot.on('connected', async function() {
             } else {
                 console.log(`Joined channels: ${arrayChannels}`);
             }
+        } else {
+            bot.say("#testing",`Error initializing database...`);
         }
     }
     stream.startStream(db);
