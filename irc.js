@@ -1230,7 +1230,7 @@ bot.on('message', async function(event) {
                     bot.say(from,`@${from} please wait for the current IMDb search to complete.`);
                 }
             } else {
-                bot.say(from,`The 'dalle' module is not enabled in ${to}.`);
+                bot.say(from,`The 'imdb' module is not enabled in ${to}.`);
             }
         }
         // if message is .help
