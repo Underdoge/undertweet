@@ -1,8 +1,10 @@
 'use strict';
 
+const { deepStrictEqual } = require('assert');
 const { url } = require('inspector');
 
 const
+    cheerio = require('cheerio'),
     Database = require('better-sqlite3'),
     joinImages = require("join-images"),
     needle = require('needle'),
@@ -599,7 +601,7 @@ bot.on('connected', async function() {
             bot.say("#testing",`Error initializing database...`);
         }
     }
-    stream.startStream(db);
+    //stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
@@ -834,7 +836,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb'){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,enable);
             } else {
@@ -846,7 +848,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai"){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb'){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,disable);
             } else {
@@ -1160,14 +1162,70 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/\.imdb\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"imdb")) {
-                let imdbquery = message.slice(message.match(/\.imdb\s.+$/).index+6).trim();
-                imdbquery = "https://www.imdb.com/find?q=" + imdbquery + "&ref_=nv_sr_sm"
-                // check if bot is not handling another call
                 if (!channels[to].running){
                     channels[to].running = true;
-                    needle.post(prompt, function(err, res, body) {
-                        
+                    let imdbquery = message;
+                    let title = "";
+                    if (message.match(/\s-/)){
+                        title = message.slice(message.match(/\.imdb\s/).index+6, message.match(/\s-/).index).trim();
+                    } else {
+                        title = message.slice(message.match(/\.imdb\s.+$/).index+6).trim();
+                    }
+                    let yearSearch = false;
+                    imdbquery = title.replace(" ","+");
+                    imdbquery = "https://www.imdb.com/search/title/?title=" + title;
+                    if (message.match(/-m/)) {
+                        imdbquery += "&title_type=feature";
+                    }
+                    if (message.match(/-tv/)) {
+                        imdbquery += "&title_type=tv_series";
+                    }
+                    if (message.match(/-y\s[1-2][0,8,9]([0-9]){2}/)){
+                        yearSearch = true;
+                        imdbquery += "&release_date=" + message.slice(message.match(/[1-2][0,8,9]([0-9]){2}/).index,message.match(/[1-2][0,8,9]([0-9]){2}/).index+4) + "-01-01,";
+                    }
+                    console.log(`Search Query: ${imdbquery}`);
+                    // check if bot is not handling another call
+                    needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
+                        const $ = cheerio.load(body);
+                        let results = 0, index = 0;
+                        let details = "";
+                        $('.lister-item-content').map((i,card) =>{
+                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase() == title){
+                                results += 1;
+                            }
+                        });
+                        $('.lister-item-content').map((i, card) => {
+                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase() == title && (index+1) < 4 ){
+                                details = "";
+                                let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
+                                if ($(card).find('.ratings-bar').find('strong').text()) {
+                                    for (i = 0 ; i < 10 ; i += 2) {
+                                        if (i < parseInt($(card).find('.ratings-bar').find('strong').text())-1){
+                                            stars += `⭐`;
+                                        }
+                                    }
+                                } else {
+                                    stars = `⚝ N/A`;
+                                }
+                                if ($(card).find('p.text-muted')){
+                                    $(card).find('p.text-muted').map((i, info) => {
+                                        $(info).find('span').map((i,detail) => {
+                                            details += `${$(detail).text().trim()} `;
+                                        });
+                                        if ($(info).text().trim().indexOf("|") == -1)
+                                            details += `| "${$(info).text().trim().replace(/\s{2,}/gi, '')}"`;
+                                    });
+                                }
+                                bot.say(to,`[${index+1}/${results}] Title: ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} || ${stars} ${details}`);
+                                if (results > 3) {
+                                    bot.say(from,`To view all the results visit: ${imdbquery}`);
+                                }
+                                index += 1;
+                            }
+                        }).get();
                     });
+                    channels[to].running = false;
                 } else {
                     bot.say(from,`@${from} please wait for the current IMDb search to complete.`);
                 }
@@ -1181,7 +1239,7 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai'.`);},1000);
+            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
