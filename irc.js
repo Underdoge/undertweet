@@ -1,5 +1,7 @@
 'use strict';
 
+const { url } = require('inspector');
+
 const
     Database = require('better-sqlite3'),
     joinImages = require("join-images"),
@@ -197,19 +199,29 @@ function getImageURL (data,options) {
 
 async function postOpenAIImage(to,from,prompt){
     let data = null,
-        url = "",
+        urls = [],
+        msg = "",
         options = {
             multipart:true,
             json:true
         };
+    for (let i=0; i < 3; i++) {
+        data = {
+            image:{
+                file: path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`),
+                content_type: 'image/png'
+            }
+        };
+        msg += `${i}) ${await getImageURL(data, options)} `
+    }
     data = {
         image:{
             file: path.join(__dirname,'openaiimages',to,`openaidalle.jpg`),
             content_type: 'image/jpg'
         }
     };
-    url = await getImageURL(data, options);
-    bot.say(to,`@${from} here you go "${prompt}": ${url}`);
+    msg += `1+2+3) ${await getImageURL(data, options)}`;
+    bot.say(to,`@${from} here you go "${prompt}": ${msg}`);
     channels[to].openairunning = false;
 }
 
@@ -1146,6 +1158,23 @@ bot.on('message', async function(event) {
                 bot.say(from,`The 'openai' module is not enabled in ${to}.`);
             }
         } else
+        if (message.match(/\.imdb\s.+$/)) {
+            if (await isModuleEnabledInChannel(to,"imdb")) {
+                let imdbquery = message.slice(message.match(/\.imdb\s.+$/).index+6).trim();
+                imdbquery = "https://www.imdb.com/find?q=" + imdbquery + "&ref_=nv_sr_sm"
+                // check if bot is not handling another call
+                if (!channels[to].running){
+                    channels[to].running = true;
+                    needle.post(prompt, function(err, res, body) {
+                        
+                    });
+                } else {
+                    bot.say(from,`@${from} please wait for the current IMDb search to complete.`);
+                }
+            } else {
+                bot.say(from,`The 'dalle' module is not enabled in ${to}.`);
+            }
+        }
         // if message is .help
         if (message.match(/^\.help$/)) {
             bot.say(from,'Usage:');
