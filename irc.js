@@ -1227,7 +1227,7 @@ bot.on('message', async function(event) {
                                             }
                                         });
                                     }
-                                    bot.say(to,`[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} | ${stars} | ${details}`);
+                                    bot.say(to,`[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replace("|","·")}`);
                                     if (results > 3) {
                                         bot.say(from,`To view all the results visit: ${imdbquery}`);
                                     }
