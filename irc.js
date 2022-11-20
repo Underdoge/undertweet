@@ -201,7 +201,6 @@ function getImageURL (data,options) {
 
 async function postOpenAIImage(to,from,prompt){
     let data = null,
-        urls = [],
         msg = "",
         options = {
             multipart:true,
@@ -229,19 +228,28 @@ async function postOpenAIImage(to,from,prompt){
 
 async function postOpenAIImageVariation(to,from){
     let data = null,
-        url = "",
+        msg = "",
         options = {
             multipart:true,
             json:true
         };
+    for (let i=0; i < 3; i++) {
+        data = {
+            image:{
+                file: path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`),
+                content_type: 'image/png'
+            }
+        };
+        msg += `${i}) ${await getImageURL(data, options)} `
+    }
     data = {
         image:{
             file: path.join(__dirname,'openaiimages',to,`openaidalle.jpg`),
             content_type: 'image/jpg'
         }
     };
-    url = await getImageURL(data, options);
-    bot.say(to,`@${from} here you go: ${url}`);
+    msg += `1+2+3) ${await getImageURL(data, options)}`;
+    bot.say(to,`@${from} here you go: ${msg}`);
     channels[to].openairunning = false;
 }
 
