@@ -1173,10 +1173,11 @@ bot.on('message', async function(event) {
                     let imdbquery = message;
                     let title = "";
                     if (message.match(/\s-/)){
-                        title = message.slice(message.match(/\.imdb\s/).index+6, message.match(/\s-/).index).trim();
+                        title = message.slice(message.match(/\.imdb\s/).index+6, message.match(/\s-/).index).trim().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     } else {
-                        title = message.slice(message.match(/\.imdb\s.+$/).index+6).trim();
+                        title = message.slice(message.match(/\.imdb\s.+$/).index+6).trim().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     }
+                    console.log(`title: ${title}`)
                     let yearSearch = false;
                     imdbquery = "https://www.imdb.com/search/title/?title=" + title.replaceAll(" ","+");
                     if (message.match(/-m/)) {
@@ -1190,12 +1191,13 @@ bot.on('message', async function(event) {
                         imdbquery += "&release_date=" + message.slice(message.match(/[1-2][0,8,9]([0-9]){2}/).index,message.match(/[1-2][0,8,9]([0-9]){2}/).index+4) + "-01-01,";
                     }
                     // check if bot is not handling another call
+                    console.log(imdbquery);
                     needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
                         let results = 0, index = 0, details = "";
                         $('.lister-item-content').map((i,card) =>{
-                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us') == title.toLocaleLowerCase('en-us')){
+                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title){
                                 results += 1;
                             }
                         });
@@ -1203,7 +1205,7 @@ bot.on('message', async function(event) {
                             bot.say(to,`No results for '${title}'`);
                         } else 
                             $('.lister-item-content').map((i, card) => {
-                                if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us') == title.toLocaleLowerCase('en-us') && (index+1) < 4 ){
+                                if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title && (index+1) < 4 ){
                                     details = "";
                                     let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
                                     if ($(card).find('.ratings-bar').find('strong').text()) {
