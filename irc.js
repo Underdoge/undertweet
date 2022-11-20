@@ -727,7 +727,7 @@ bot.on('message', async function(event) {
                         message=`https://${message.match(/t\.co\/\w+/)[0]}`;
                         needle.head(message, function(err,res) {
                             message=res.headers.location;
-                            if (message.match(/twitter\.com\/\w+\/status\/\d+/)) {
+                            if (message && message.match(/twitter\.com\/\w+\/status\/\d+/)) {
                                 // it is a valid twitter status url
                                 let
                                     id = message.slice(message.search(/\/\d+/)+1),
@@ -749,8 +749,6 @@ bot.on('message', async function(event) {
                                         sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
                                     }
                                 });
-                            } else {
-                                
                             }
                         });
                         return;
