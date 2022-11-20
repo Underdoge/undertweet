@@ -609,7 +609,7 @@ bot.on('connected', async function() {
             bot.say("#testing",`Error initializing database...`);
         }
     }
-    //stream.startStream(db);
+    stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
