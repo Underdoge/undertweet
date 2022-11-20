@@ -213,7 +213,7 @@ async function postOpenAIImage(to,from,prompt){
                 content_type: 'image/png'
             }
         };
-        msg += `${i}) ${await getImageURL(data, options)} `
+        msg += `${i+1}) ${await getImageURL(data, options)} `
     }
     data = {
         image:{
@@ -240,7 +240,7 @@ async function postOpenAIImageVariation(to,from){
                 content_type: 'image/png'
             }
         };
-        msg += `${i}) ${await getImageURL(data, options)} `
+        msg += `${i+1}) ${await getImageURL(data, options)} `
     }
     data = {
         image:{
