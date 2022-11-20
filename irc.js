@@ -1172,8 +1172,7 @@ bot.on('message', async function(event) {
                         title = message.slice(message.match(/\.imdb\s.+$/).index+6).trim();
                     }
                     let yearSearch = false;
-                    imdbquery = title.replace(" ","+");
-                    imdbquery = "https://www.imdb.com/search/title/?title=" + title;
+                    imdbquery = "https://www.imdb.com/search/title/?title=" + title.replaceAll(" ","+");
                     if (message.match(/-m/)) {
                         imdbquery += "&title_type=feature";
                     }
@@ -1184,46 +1183,49 @@ bot.on('message', async function(event) {
                         yearSearch = true;
                         imdbquery += "&release_date=" + message.slice(message.match(/[1-2][0,8,9]([0-9]){2}/).index,message.match(/[1-2][0,8,9]([0-9]){2}/).index+4) + "-01-01,";
                     }
-                    console.log(`Search Query: ${imdbquery}`);
                     // check if bot is not handling another call
+                    needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
-                        let results = 0, index = 0;
-                        let details = "";
+                        let results = 0, index = 0, details = "";
                         $('.lister-item-content').map((i,card) =>{
-                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase() == title){
+                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us') == title.toLocaleLowerCase('en-us')){
                                 results += 1;
                             }
                         });
-                        $('.lister-item-content').map((i, card) => {
-                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase() == title && (index+1) < 4 ){
-                                details = "";
-                                let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
-                                if ($(card).find('.ratings-bar').find('strong').text()) {
-                                    for (i = 0 ; i < 10 ; i += 2) {
-                                        if (i < parseInt($(card).find('.ratings-bar').find('strong').text())-1){
-                                            stars += `⭐`;
+                        if (results == 0) {
+                            bot.say(to,`No results for '${title}'`);
+                        } else 
+                            $('.lister-item-content').map((i, card) => {
+                                if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us') == title.toLocaleLowerCase('en-us') && (index+1) < 4 ){
+                                    details = "";
+                                    let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
+                                    if ($(card).find('.ratings-bar').find('strong').text()) {
+                                        for (i = 0 ; i < 10 ; i += 2) {
+                                            if (i < parseInt($(card).find('.ratings-bar').find('strong').text())-1){
+                                                stars += colors.yellow("\u2605");
+                                            }
                                         }
+                                    } else {
+                                        stars = colors.gray("\u2606") + " N/A";
                                     }
-                                } else {
-                                    stars = `⚝ N/A`;
-                                }
-                                if ($(card).find('p.text-muted')){
-                                    $(card).find('p.text-muted').map((i, info) => {
-                                        $(info).find('span').map((i,detail) => {
-                                            details += `${$(detail).text().trim()} `;
+                                    if ($(card).find('p.text-muted')){
+                                        $(card).find('p.text-muted').map((i, info) => {
+                                            $(info).find('span').map((i,detail) => {
+                                                details += `${$(detail).text().trim()} `;
+                                            });
+                                            if (i == $(card).find('p.text-muted').length - 1){
+                                                details += `| "${$(info).text().trim().replace(/\s{2,}/gi, '')}"`;
+                                            }
                                         });
-                                        if ($(info).text().trim().indexOf("|") == -1)
-                                            details += `| "${$(info).text().trim().replace(/\s{2,}/gi, '')}"`;
-                                    });
+                                    }
+                                    bot.say(to,`[${index+1}/${results}] Title: ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} | ${stars} | ${details}`);
+                                    if (results > 3) {
+                                        bot.say(from,`To view all the results visit: ${imdbquery}`);
+                                    }
+                                    index += 1;
                                 }
-                                bot.say(to,`[${index+1}/${results}] Title: ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} || ${stars} ${details}`);
-                                if (results > 3) {
-                                    bot.say(from,`To view all the results visit: ${imdbquery}`);
-                                }
-                                index += 1;
-                            }
-                        }).get();
+                            }).get();
                     });
                     channels[to].running = false;
                 } else {
