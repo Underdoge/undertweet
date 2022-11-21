@@ -1306,7 +1306,7 @@ bot.on('message', async function(event) {
                                         });
                                     }
                                     out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")} · ${url}`;
-                                    if (out.length > 337) {
+                                    if (out.length > 350) {
                                         out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")}`;
                                         bot.say(to,out);
                                         bot.say(to,url);
