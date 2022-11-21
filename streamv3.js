@@ -171,10 +171,17 @@ exports.startStream = function(db) {
                                 timeout: 20000
                             });
                         stream.on('error', function (error) {
-                            setLongWait(response.headers["x-rate-limit-reset"]);
-                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                            irc.sayToChannel('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                            setTimeout(function() {exports.endStream(); exports.startStream(db)},(getLongWait()+2)*60*1000);
+                            if (error.code == "ECONNRESET") {
+                                setLongWait(response.headers["x-rate-limit-reset"]);
+                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
+                                irc.sayToChannel('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
+                                setTimeout(function() {exports.endStream(); exports.startStream(db)},60*1000);
+                            } else {
+                                setLongWait(response.headers["x-rate-limit-reset"]);
+                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                irc.sayToChannel('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                setTimeout(function() {exports.endStream(); exports.startStream(db)},(getLongWait()+2)*60*1000);
+                            }
                         })
                         .on('timeout', function() {
                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
@@ -335,7 +342,7 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
                                     } catch (e) {
                                         console.log(`Error: ${e}`);
                                         console.log(`Chunk: ${JSON.stringify(chunk)}`);
-                                        irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${chunk}`);                                        }
+                                        irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${JSON.stringify(chunk)}`);                                        }
                                     // limit notices
                                     if (tweet && tweet.limit) {
                                         console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
