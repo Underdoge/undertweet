@@ -236,10 +236,10 @@ function resizeImageIfNotSquare(imagePath,to) {
         image
             .metadata()
             .then( async metadata => {
-                if (metadata.width > metadata.height) {
+                if (metadata.width < metadata.height) {
                     requiredDimension = metadata.height;
                 } else
-                if (metadata.width < metadata.height) {
+                if (metadata.width > metadata.height) {
                     requiredDimension = metadata.width;
                 }
                 if (requiredDimension > 0) {
