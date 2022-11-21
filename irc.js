@@ -5,6 +5,7 @@ const { url } = require('inspector');
 
 const
     cheerio = require('cheerio'),
+    sharp = require('sharp'),
     Database = require('better-sqlite3'),
     joinImages = require("join-images"),
     needle = require('needle'),
@@ -156,6 +157,8 @@ function deleteImages(to){
 function deleteOpenAIImage(to){
     if(fs.existsSync(path.join(__dirname,'openaiimages',to,'variation.png')))
     fs.unlinkSync(path.join(__dirname,'openaiimages',to,'variation.png'));
+    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'variation_resized.png')))
+    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'variation_resized.png'));
     if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_0.png')))
     fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'));
     if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_1.png')))
@@ -224,6 +227,39 @@ async function postOpenAIImage(to,from,prompt){
     msg += `1+2+3) ${await getImageURL(data, options)}`;
     bot.say(to,`@${from} here you go "${prompt}": ${msg}`);
     channels[to].openairunning = false;
+}
+
+function resizeImageIfNotSquare(imagePath,to) {
+    return new Promise( resolve => {
+        const image = sharp(imagePath);
+        var requiredDimension = 0;
+        image
+            .metadata()
+            .then( async metadata => {
+                if (metadata.width > metadata.height) {
+                    requiredDimension = metadata.height;
+                } else
+                if (metadata.width < metadata.height) {
+                    requiredDimension = metadata.width;
+                }
+                if (requiredDimension > 0) {
+                    await image
+                        .resize( { width: requiredDimension, height: requiredDimension,  fit: "fill"})
+                        .toFile(path.join(__dirname, 'openaiimages',to, 'variation_resized.png'), (err, info) => { 
+                            if (err) {
+                                console.error("An error occurred resizing image:", err);
+                                bot.say(to,`Error resizing image ${err}`);
+                                resolve(false);
+                            } else {
+                                resolve(true);
+                            }
+                            
+                        });
+                } else {
+                    resolve(false);
+                }
+            });
+    });
 }
 
 async function postOpenAIImageVariation(to,from){
@@ -1004,17 +1040,31 @@ bot.on('message', async function(event) {
                         channels[to].openairunning = true;
                         bot.say(to,`Generating variations...`);
                         deleteOpenAIImage(to);
-                        needle.get(url, (err, res) => {
+                        needle.get(url, async (err, res) => {
                             if (!err && res.statusCode == 200) {
+                                let resized = false;
                                 fs.writeFileSync(path.join(__dirname,'openaiimages',to,'variation.png'), res.raw);
-                                let data = {
-                                    image: {
-                                        file: path.join(__dirname,'openaiimages',to,'variation.png'),
-                                        content_type: "image/png"
-                                    },
-                                    "n": 3,
-                                    "response_format": "b64_json",
-                                    "size": "512x512"
+                                resized = await resizeImageIfNotSquare(path.join(__dirname,'openaiimages',to,'variation.png'),to);
+                                if (resized) {
+                                    var data = {
+                                        image: {
+                                            file: path.join(__dirname,'openaiimages',to,'variation_resized.png'),
+                                            content_type: "image/png"
+                                        },
+                                        "n": 3,
+                                        "response_format": "b64_json",
+                                        "size": "512x512"
+                                    }
+                                } else {
+                                    var data = {
+                                        image: {
+                                            file: path.join(__dirname,'openaiimages',to,'variation.png'),
+                                            content_type: "image/png"
+                                        },
+                                        "n": 3,
+                                        "response_format": "b64_json",
+                                        "size": "512x512"
+                                    }
                                 }
                                 needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openAIAPIToken}`}, multipart: true },function (error,response){
                                     if (!error && response.statusCode == 200){
