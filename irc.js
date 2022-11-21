@@ -334,7 +334,7 @@ function enable (event) {
                             newModule.run(to,module);
                         });
                         join(to,module);
-                        bot.say(nick,`Enabled new '${module}' module in ${to}!`);
+                        bot.say(nick,`Enabled new '${module}' module in ${to}.`);
                     } catch (err) {
                         bot.say(nick,err);
                     }
@@ -347,12 +347,12 @@ function enable (event) {
                                 newModule.run(to,module);
                             });
                             join(to,module);
-                            bot.say(nick,`Enabled '${module}' module in ${to}!`);
+                            bot.say(nick,`Enabled '${module}' module in ${to}.`);
                         } catch (err) {
                             bot.say(nick,err);
                         }
                     } else {
-                        bot.say(nick,`Module '${module}' already enabled in ${to}!`);
+                        bot.say(nick,`Module '${module}' already enabled in ${to}.`);
                     }
                 }
             } else {
@@ -380,7 +380,7 @@ function disable (event) {
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
-                    bot.say(nick,`Module '${module}' not enabled in ${to}!`); 
+                    bot.say(nick,`Module '${module}' not enabled in ${to}.`); 
                         
                 } else {
                     const disableModule = db.prepare("delete from modules where t_channel_name = ? and t_module_name = ?");
@@ -389,7 +389,7 @@ function disable (event) {
                             disableModule.run(channel,module);
                         });
                         disable(to,module);
-                        bot.say(nick,`Disabled '${module}' module in ${to}!`);
+                        bot.say(nick,`Disabled '${module}' module in ${to}.`);
                     } catch (err) {
                         bot.say(nick,err);
                     }
@@ -437,7 +437,7 @@ function follow (event) {
                                     newHandle.run(to,screen_name);
                                 });
                                 follow(to,result.screen_name);
-                                bot.say(nick,`Now following ${result.name} in ${to}!`);
+                                bot.say(nick,`Now following ${result.name} in ${to}.`);
                             } catch (err) {
                                 bot.say(nick,err);
                             }
@@ -450,13 +450,13 @@ function follow (event) {
                                         newHandle.run(to,screen_name);
                                     });
                                     follow(to,result.screen_name);
-                                    bot.say(nick,`Now following ${result.name} in ${to}!`);
+                                    bot.say(nick,`Now following ${result.name} in ${to}.`);
                                     stream.endStream();
                                 } catch (err) {
                                     bot.say(nick,err);
                                 }
                             } else {
-                                bot.say(nick,`Already following ${result.name} in ${to}!`);
+                                bot.say(nick,`Already following ${result.name} in ${to}.`);
                             }
                         }
                     } else {
@@ -490,7 +490,7 @@ function unfollow (event) {
                 // IRC USER HAS OPER OR MORE
                 const following = db.prepare("select t_handle_name from handles where t_channel_name = ? and t_handle_name = ?").get(to,handle);
                 if (following == undefined) {
-                    bot.say(nick,`Not following ${handle} in ${to}!`); 
+                    bot.say(nick,`Not following ${handle} in ${to}.`); 
                 } else {
                     const unfollowHandle = db.prepare("delete from handles where t_channel_name = ? and t_handle_name = ?");
                     try {
@@ -498,7 +498,7 @@ function unfollow (event) {
                             unfollowHandle.run(channel,handle);
                         });
                         unfollow(to,handle);
-                        bot.say(nick,`Unfollowed @${handle} in ${to}!`);
+                        bot.say(nick,`Unfollowed @${handle} in ${to}.`);
                         stream.endStream();
                     } catch (err) {
                         bot.say(nick,err);
@@ -548,8 +548,8 @@ function initDatabase(){
                 resolve(db);
             }
         } else {
-            console.log(`No database file ${config?.sqlite3?.filename} found!`);
-            bot.say("#testing",`No database file ${config?.sqlite3?.filename} found!`);
+            console.log(`No database file ${config?.sqlite3?.filename} found.`);
+            bot.say("#testing",`No database file ${config?.sqlite3?.filename} found.`);
             resolve(null);
         }
     });
@@ -1213,6 +1213,8 @@ bot.on('message', async function(event) {
                                         for (i = 0 ; i < 10 ; i += 2) {
                                             if (i < parseInt($(card).find('.ratings-bar').find('strong').text())-1){
                                                 stars += colors.yellow("\u2605");
+                                            } else {
+                                                stars += colors.gray("\u2606");
                                             }
                                         }
                                     } else {
@@ -1224,11 +1226,11 @@ bot.on('message', async function(event) {
                                                 details += `${$(detail).text().trim()} `;
                                             });
                                             if (i == $(card).find('p.text-muted').length - 1){
-                                                details += `| "${$(info).text().trim().replace(/\s{2,}/gi, '')}"`;
+                                                details += `· "${$(info).text().trim().replace(/\s{2,}/gi, '')}"`;
                                             }
                                         });
                                     }
-                                    bot.say(to,`[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replace("|","·")}`);
+                                    bot.say(to,`[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replaceAll("|","·")}`);
                                     if (results > 3) {
                                         bot.say(from,`To view all the results visit: ${imdbquery}`);
                                     }
