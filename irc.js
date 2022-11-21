@@ -1244,7 +1244,7 @@ bot.on('message', async function(event) {
                     needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
-                        let results = 0, index = 0, details = "", url = "", out = "";
+                        let results = 0, index = 0, details = "", url = "", out = "", votes = "", gross = "";
                         $('.lister-item-content').map((i,card) =>{
                             if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title){
                                 results += 1;
@@ -1258,6 +1258,14 @@ bot.on('message', async function(event) {
                                     url = "https://imdb.com" + $(card).find('.lister-item-header').find('a').attr('href');
                                     url = url.substring(0,url.match(/\/\?ref_=adv_li_tt/).index);
                                     details = "";
+                                    if ($(card).find('p.sort-num_votes-visible').find('span')){
+                                        $(card).find('p.sort-num_votes-visible').find('span').map ( (i,info) => {
+                                            if ($(info).attr('name') == 'nv' && $(info).text().indexOf("$") == -1)
+                                                votes = $(info).text().replace(",","");
+                                            if ($(info).attr('name') == 'nv' && $(info).text().indexOf("$") != -1)
+                                                gross = $(info).text();
+                                        });
+                                    }
                                     let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
                                     if ($(card).find('.ratings-bar').find('strong').text()) {
                                         for (i = 0 ; i < 10 ; i += 2) {
@@ -1266,6 +1274,18 @@ bot.on('message', async function(event) {
                                             } else {
                                                 stars += colors.gray("\u2606");
                                             }
+                                        }
+                                        if (votes != "") {
+                                            console.log(`votes: ${votes}`);
+                                            if (parseInt(votes) > 1000000) {
+                                                console.log(`votes > 1000000: ${votes}`);
+                                                votes = Math.floor(parseInt(votes)/1000000).toString() + "M";
+                                            } else 
+                                            if (parseInt(votes) > 1000) {
+                                                console.log(`votes > 1000: ${votes}`);
+                                                votes = Math.floor(parseInt(votes)/1000).toString() + "K";
+                                            }
+                                            stars += ` (${votes} votes)`;
                                         }
                                     } else {
                                         stars = colors.gray("\u2606") + " N/A";
@@ -1280,9 +1300,9 @@ bot.on('message', async function(event) {
                                             }
                                         });
                                     }
-                                    out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replaceAll("|","·")} · ${url}`;
-                                    if (out.length > 340) {
-                                        out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replaceAll("|","·")}`;
+                                    out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")} · ${url}`;
+                                    if (out.length > 337) {
+                                        out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")}`;
                                         bot.say(to,out);
                                         bot.say(to,url);
                                     } else {
