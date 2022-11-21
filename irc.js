@@ -1244,7 +1244,7 @@ bot.on('message', async function(event) {
                     needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
-                        let results = 0, index = 0, details = "";
+                        let results = 0, index = 0, details = "", url = "", out = "";
                         $('.lister-item-content').map((i,card) =>{
                             if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title){
                                 results += 1;
@@ -1255,6 +1255,8 @@ bot.on('message', async function(event) {
                         } else 
                             $('.lister-item-content').map((i, card) => {
                                 if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title && (index+1) < 4 ){
+                                    url = "https://imdb.com" + $(card).find('.lister-item-header').find('a').attr('href');
+                                    url = url.substring(0,url.match(/\/\?ref_=adv_li_tt/).index);
                                     details = "";
                                     let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
                                     if ($(card).find('.ratings-bar').find('strong').text()) {
@@ -1278,7 +1280,15 @@ bot.on('message', async function(event) {
                                             }
                                         });
                                     }
-                                    bot.say(to,`[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replaceAll("|","·")}`);
+                                    out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replaceAll("|","·")} · ${url}`;
+                                    if (out.length > 340) {
+                                        out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} · ${details.replaceAll("|","·")}`;
+                                        bot.say(to,out);
+                                        bot.say(to,url);
+                                    } else {
+                                        bot.say(to,out);
+                                    }
+                                    
                                     if (results > 3) {
                                         bot.say(from,`To view all the results visit: ${imdbquery}`);
                                     }
