@@ -823,12 +823,13 @@ bot.on('message', async function(event) {
                     let options = { follow_max: 5, headers: {"User-Agent": 'needle'}};
                     needle.get(url,options,function(err,r,body) {
                         if (!(body instanceof Buffer)) {
-                            console.log(body);
-                            let title = body.match(/<title>(.*?)<\/title>/)[1];
-                            htmlKeys.forEach( curr => {
-                                title = title.replace(new RegExp(curr,'g'),unescape(curr));
-                            });
-                            bot.say(to,`Title: ${title}`);
+                            if (body.match(/<title>(.*?)<\/title>/)) {
+                                let title = body.match(/<title>(.*?)<\/title>/)[1];
+                                htmlKeys.forEach( curr => {
+                                    title = title.replace(new RegExp(curr,'g'),unescape(curr));
+                                });
+                                bot.say(to,`Title: ${title}`);
+                            } 
                         }
                     });
                 }
