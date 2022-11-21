@@ -243,7 +243,7 @@ function resizeImageIfNotSquare(imagePath,to) {
                     requiredDimension = metadata.width;
                 }
                 if (requiredDimension > 0) {
-                    await image
+                    image
                         .resize( { width: requiredDimension, height: requiredDimension,  fit: "fill"})
                         .toFile(path.join(__dirname, 'openaiimages',to, 'variation_resized.png'), (err, info) => { 
                             if (err) {
