@@ -37,7 +37,7 @@ const
     htmlMap ={
         '&amp;': '&', '&lt;':'<', '&gt;':'>',
     },
-    htmlKeys = ['&amp;', '&lt;', '&gt;'],
+    htmlKeys = ['&amp;', '&lt;', '&gt;', '&#(\\d+);'],
     token = config.twitter.bearer_token,
     channels = [],
     options_horizontal = {
@@ -70,8 +70,13 @@ function setDatabase(newdb){
     db = newdb;
 }
 
-function unescape(char) {
-    return htmlMap[char];
+function unescape(char, text) {
+    console.log(char);
+    if (char == '&#(\\d+);') {
+        return String.fromCharCode(text.match(/(\d+)/g));
+    } else {
+        return htmlMap[char];
+    }
 }
 
 function sendSpace(to,title,state,started_at,host_ids,participant_count){
@@ -685,7 +690,7 @@ bot.on('message', async function(event) {
                                 }
                                 result[0].text = result[0].full_text.replace(/\n/g, ' ');
                                 htmlKeys.forEach( curr => {
-                                    result[0].text = result[0].text.replace(new RegExp(curr,'g'),unescape(curr));
+                                    result[0].text = result[0].text.replace(new RegExp(curr,'g'),unescape(curr, result[0].text));
                                 });
                                 sendTweet(to,result[0].text,result[0].user.name,result[0].created_at,result[0].retweet_count,result[0].favorite_count,false,null,null);
                             } else
@@ -720,7 +725,7 @@ bot.on('message', async function(event) {
                                 }
                                 result.statuses[0].text = result.statuses[0].full_text.replace(/\n/g, ' ');
                                 htmlKeys.forEach( curr => {
-                                    result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr));
+                                    result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr,result.statuses[0].text));
                                 });
                                 sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
                             } else {
@@ -738,7 +743,7 @@ bot.on('message', async function(event) {
                                         }
                                         result.statuses[0].text = result.statuses[0].full_text.replace(/\n/g, ' ');
                                         htmlKeys.forEach( curr => {
-                                            result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr));
+                                            result.statuses[0].text = result.statuses[0].text.replace(new RegExp(curr,'g'),unescape(curr,result.statuses[0].text));
                                         });
                                         sendTweet(to,result.statuses[0].text,result.statuses[0].user.screen_name,result.statuses[0].created_at,result.statuses[0].retweet_count,result.statuses[0].favorite_count,false,null,null);
                                     } else
@@ -780,7 +785,7 @@ bot.on('message', async function(event) {
                                     if (!result.errors && result) {
                                         result.text = result.full_text.replace(/\n/g, ' ');
                                         htmlKeys.forEach( curr => {
-                                            result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                            result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr,result.text));
                                         });
                                         sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
                                     }
@@ -810,13 +815,13 @@ bot.on('message', async function(event) {
                         if (!result.errors && result) {
                             result.text = result.full_text.replace(/\n/g, ' ');
                             htmlKeys.forEach( curr => {
-                                result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr,result.text));
                             });
                             if (result.quoted_status) {
                                 result.quoted_status.text = result.quoted_status.full_text.replace(/\n/g,' ');
                                 result.text = result.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
                                 htmlKeys.forEach( curr => {
-                                    result.quoted_status.text = result.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                    result.quoted_status.text = result.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr,result.quoted_status.text));
                                 });
                                 sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,true,result.quoted_status.user.screen_name,result.quoted_status.text);
                             } else {
@@ -843,7 +848,7 @@ bot.on('message', async function(event) {
                         }
                         if (!result.errors && result) {
                             htmlKeys.forEach( curr => {
-                                result.data.title = result.data.title.replace(new RegExp(curr,'g'),unescape(curr));
+                                result.data.title = result.data.title.replace(new RegExp(curr,'g'),unescape(curr,result.data.title));
                             });
                             sendSpace(to,result.data.title,result.data.state,result.data.started_at,result.data.host_ids,result.data.participant_count);
                         }
@@ -862,7 +867,7 @@ bot.on('message', async function(event) {
                             if (body.match(/<title>(.*?)<\/title>/)) {
                                 let title = body.match(/<title>(.*?)<\/title>/)[1];
                                 htmlKeys.forEach( curr => {
-                                    title = title.replace(new RegExp(curr,'g'),unescape(curr));
+                                    title = title.replace(new RegExp(curr,'g'),unescape(curr,title));
                                 });
                                 bot.say(to,`Title: ${title}`);
                             } 
