@@ -1106,7 +1106,7 @@ bot.on('message', async function(event) {
                     }
                 } else 
                     if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/)){
-                        bot.say(from,`@${from} Variation image must be a valid PNG file, less than 4MB, and square.`);
+                        bot.say(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
                     } else {
                         //generate image variation by preview image number
                         if (message.match(/\.openai\s[1-3]$/)){
