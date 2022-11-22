@@ -1257,7 +1257,7 @@ bot.on('message', async function(event) {
                         });
                         if (results == 0) {
                             bot.say(to,`No results for '${title}'`);
-                        } else 
+                        } else {
                             $('.lister-item-content').map((i, card) => {
                                 if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title && (index+1) < 4 ){
                                     url = "https://imdb.com" + $(card).find('.lister-item-header').find('a').attr('href');
@@ -1313,13 +1313,13 @@ bot.on('message', async function(event) {
                                     } else {
                                         bot.say(to,out);
                                     }
-                                    
-                                    if (results > 3) {
-                                        bot.say(from,`To view all the results visit: ${imdbquery}`);
-                                    }
                                     index += 1;
                                 }
                             }).get();
+                            if (results > 3) {
+                                bot.say(from,`To view all the results visit: ${imdbquery}`);
+                            }
+                        }
                     });
                     channels[to].running = false;
                 } else {
