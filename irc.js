@@ -71,7 +71,6 @@ function setDatabase(newdb){
 }
 
 function unescape(char, text) {
-    console.log(char);
     if (char == '&#(\\d+);') {
         return String.fromCharCode(text.match(/(\d+)/g));
     } else {
@@ -1281,13 +1280,10 @@ bot.on('message', async function(event) {
                                             }
                                         }
                                         if (votes != "") {
-                                            console.log(`votes: ${votes}`);
                                             if (parseInt(votes) > 1000000) {
-                                                console.log(`votes > 1000000: ${votes}`);
                                                 votes = Math.floor(parseInt(votes)/1000000).toString() + "M";
                                             } else 
                                             if (parseInt(votes) > 1000) {
-                                                console.log(`votes > 1000: ${votes}`);
                                                 votes = Math.floor(parseInt(votes)/1000).toString() + "K";
                                             }
                                             stars += ` (${votes} votes)`;
