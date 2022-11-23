@@ -306,7 +306,7 @@ ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)} \
 Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`;
                                                             // check if message too long for IRC
-                                                                    if (message.length > 340) {
+                                                                    if (message.length > 334) {
                                                                         irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
                                                                         irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
@@ -322,7 +322,7 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`;
-                                                                    if (message.length > 350) {
+                                                                    if (message.length > 334) {
                                                                         irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
                                                                         irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\

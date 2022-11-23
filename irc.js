@@ -101,7 +101,7 @@ ${colors.teal(text)} · by ${username} \
 on ${new Date(date).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`;
-        if (message.length > 350){
+        if (message.length > 334){
             bot.say(to,`${colors.teal(text)}`);
             bot.say(to,`by ${username} on ${new Date(date).toLocaleTimeString('en-us', dateOptions)} ·${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
@@ -115,7 +115,7 @@ on ${new Date(date).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)} \
 Quoting @${quotedUsername}: ${colors.teal(quotedText)}`;
-        if (message.length > 350) {
+        if (message.length > 334) {
             bot.say(to,`${colors.teal(text)}`);
             bot.say(to,`by ${username} \
 on ${new Date(date).toLocaleDateString('en-us', dateOptions)} ·\
