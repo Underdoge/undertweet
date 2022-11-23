@@ -28,7 +28,6 @@ const
     twitterUrl = 'https://api.twitter.com/1.1/users/show.json',
     openAIAPIGenerationsUrl = config.openAI.api_generations_url,
     openAIAPIVariationsUrl = config.openAI.api_variations_url,
-    openAIAPIToken = config.openAI.api_key,
     dateOptions = {
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
@@ -291,6 +290,51 @@ async function postOpenAIImageVariation(to,from){
     msg += `1+2+3) ${await getImageURL(data, options)}`;
     bot.say(to,`@${from} here you go: ${msg}`);
     channels[to].openairunning = false;
+}
+
+function getUserOpenaiAPIKey (nick) {
+    return new Promise( resolve => {
+        const db = getDatabase();
+        const api_key = db.prepare("select t_key from openai_apikeys where t_nick = ?").get(nick);
+        if (api_key != undefined && api_key != "") {
+            resolve(api_key.t_key);
+        } else {
+            resolve(null);
+        }
+    });
+}
+
+function setUserOpenaiAPIKey (nick, key) {
+    return new Promise ( resolve => {
+        const db = getDatabase();
+        const setAPIKey = db.prepare("replace into openai_apikeys (t_nick, t_key) values (?, ?)");
+        try {
+            const create = db.transaction ( (nick,key) => {
+                setAPIKey.run(nick,key);
+            });
+            create(nick,key);
+            resolve(true);
+        } catch (err) {
+            bot.say(nick,err);
+            resolve(false);
+        }
+    });
+}
+function deleteUserOpenaiAPIKey (nick) {
+    return new Promise ( resolve => {
+        const db = getDatabase();
+        const deleteAPIKey = db.prepare("delete from openai_apikeys where t_nick = ?");
+        try {
+            const deletekey = db.transaction ( (nick) => {
+                deleteAPIKey.run(nick);
+            });
+            deletekey(nick);
+            resolve(true);
+        } catch (err) {
+            bot.say(nick,err);
+            resolve(false);
+        }
+    });
 }
 
 function getEnabledModulesInChannel (channel) {
@@ -1038,102 +1082,42 @@ bot.on('message', async function(event) {
         } else
         if (message.match(/\.openai\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"openai")) {
-                if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/)){
-                    let url = message.slice(message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/).index+8).trim();
-                    if (!channels[to].openairunning){
-                        channels[to].openairunning = true;
-                        bot.say(to,`Generating variations...`);
-                        deleteOpenAIImage(to);
-                        needle.get(url, async (err, res) => {
-                            if (!err && res.statusCode == 200) {
-                                let resized = false;
-                                fs.writeFileSync(path.join(__dirname,'openaiimages',to,'variation.png'), res.raw);
-                                resized = await resizeImageIfNotSquare(path.join(__dirname,'openaiimages',to,'variation.png'),to);
-                                if (resized) {
-                                    var data = {
-                                        image: {
-                                            file: path.join(__dirname,'openaiimages',to,'variation_resized.png'),
-                                            content_type: "image/png"
-                                        },
-                                        "n": 3,
-                                        "response_format": "b64_json",
-                                        "size": "512x512"
-                                    }
-                                } else {
-                                    var data = {
-                                        image: {
-                                            file: path.join(__dirname,'openaiimages',to,'variation.png'),
-                                            content_type: "image/png"
-                                        },
-                                        "n": 3,
-                                        "response_format": "b64_json",
-                                        "size": "512x512"
-                                    }
-                                }
-                                needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openAIAPIToken}`}, multipart: true },function (error,response){
-                                    if (!error && response.statusCode == 200){
-                                        if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
-                                            fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
-                                        }
-                                        let buffer = null;
-                                        for (let i=0; i < response.body.data.length ; i++){
-                                            buffer = Buffer.from(response.body.data[i].b64_json, "base64");
-                                            fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
-                                        }
-                                        try {
-                                            // join 3 images into a single row
-                                            joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
-                                                img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
-                                                    postOpenAIImageVariation(to,from);
-                                                });
-                                            });
-                                        } catch (error) {
-                                            channels[to].openairunning = false;
-                                            bot.say(to,`Error joining dalle images into final image: ${error}`);
+                let openaiAPIKey = await getUserOpenaiAPIKey(from);
+                console.log(`OpenaiAPIKey: ${openaiAPIKey}`);
+                if (openaiAPIKey){
+                    if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/)){
+                        let url = message.slice(message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/).index+8).trim();
+                        if (!channels[to].openairunning){
+                            channels[to].openairunning = true;
+                            bot.say(to,`Generating variations...`);
+                            deleteOpenAIImage(to);
+                            needle.get(url, async (err, res) => {
+                                if (!err && res.statusCode == 200) {
+                                    let resized = false;
+                                    fs.writeFileSync(path.join(__dirname,'openaiimages',to,'variation.png'), res.raw);
+                                    resized = await resizeImageIfNotSquare(path.join(__dirname,'openaiimages',to,'variation.png'),to);
+                                    if (resized) {
+                                        var data = {
+                                            image: {
+                                                file: path.join(__dirname,'openaiimages',to,'variation_resized.png'),
+                                                content_type: "image/png"
+                                            },
+                                            "n": 3,
+                                            "response_format": "b64_json",
+                                            "size": "512x512"
                                         }
                                     } else {
-                                        if (response.statusCode == 524){
-                                            bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
-                                        } else {
-                                            bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                                        var data = {
+                                            image: {
+                                                file: path.join(__dirname,'openaiimages',to,'variation.png'),
+                                                content_type: "image/png"
+                                            },
+                                            "n": 3,
+                                            "response_format": "b64_json",
+                                            "size": "512x512"
                                         }
-                                        channels[to].openairunning = false;
                                     }
-                                });
-                            } else {
-                                bot.say(from,`@${from} Error downloading variation image.`);
-                                channels[to].openairunning = false;
-                            }
-                        });
-                    } else {
-                        bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
-                    }
-                } else 
-                    if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/)){
-                        bot.say(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
-                    } else {
-                        //generate image variation by preview image number
-                        if (message.match(/\.openai\s[1-3]$/)){
-                            let imageNumber = message.match(/[1-3]$/)[0];
-                            if (fs.existsSync(path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`))){
-                                // check if bot is not handling another call
-                                if (!channels[to].openairunning){
-                                    channels[to].openairunning = true;
-                                    switch (imageNumber) {
-                                        case "1": bot.say(to,`Generating variations of first image...`); break;
-                                        case "2": bot.say(to,`Generating variations of second image...`); break;
-                                        case "3": bot.say(to,`Generating variations of third image...`); break;
-                                    }
-                                    let data = {
-                                        image: {
-                                            file: path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`),
-                                            content_type: "image/png"
-                                        },
-                                        "n": 3,
-                                        "response_format": "b64_json",
-                                        "size": "512x512"
-                                    }
-                                    needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openAIAPIToken}`}, multipart: true },function (error,response){
+                                    needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
                                         if (!error && response.statusCode == 200){
                                             if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
                                                 fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
@@ -1164,61 +1148,142 @@ bot.on('message', async function(event) {
                                         }
                                     });
                                 } else {
-                                    bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                    bot.say(from,`@${from} Error downloading variation image.`);
+                                    channels[to].openairunning = false;
+                                }
+                            });
+                        } else {
+                            bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                        }
+                    } else 
+                        if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/)){
+                            bot.say(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
+                        } else {
+                            //generate image variation by preview image number
+                            if (message.match(/\.openai\s[1-3]$/)){
+                                let imageNumber = message.match(/[1-3]$/)[0];
+                                if (fs.existsSync(path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`))){
+                                    // check if bot is not handling another call
+                                    if (!channels[to].openairunning){
+                                        channels[to].openairunning = true;
+                                        switch (imageNumber) {
+                                            case "1": bot.say(to,`Generating variations of first image...`); break;
+                                            case "2": bot.say(to,`Generating variations of second image...`); break;
+                                            case "3": bot.say(to,`Generating variations of third image...`); break;
+                                        }
+                                        let data = {
+                                            image: {
+                                                file: path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`),
+                                                content_type: "image/png"
+                                            },
+                                            "n": 3,
+                                            "response_format": "b64_json",
+                                            "size": "512x512"
+                                        }
+                                        needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
+                                            if (!error && response.statusCode == 200){
+                                                if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
+                                                    fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
+                                                }
+                                                let buffer = null;
+                                                for (let i=0; i < response.body.data.length ; i++){
+                                                    buffer = Buffer.from(response.body.data[i].b64_json, "base64");
+                                                    fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
+                                                }
+                                                try {
+                                                    // join 3 images into a single row
+                                                    joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                                        img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                            postOpenAIImageVariation(to,from);
+                                                        });
+                                                    });
+                                                } catch (error) {
+                                                    channels[to].openairunning = false;
+                                                    bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                                }
+                                            } else {
+                                                if (response.statusCode == 524){
+                                                    bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                                } else {
+                                                    bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                                                }
+                                                channels[to].openairunning = false;
+                                            }
+                                        });
+                                    } else {
+                                        bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                    }
+                                } else {
+                                    bot.say(from,`@${from} Selected image no longer exists.`);
                                 }
                             } else {
-                                bot.say(from,`@${from} Selected image no longer exists.`);
-                            }
-                        } else {
-                            let prompt = message.slice(message.match(/\.openai\s.+$/).index+8).trim(),
-                                data = {
-                                "prompt": prompt,
-                                "n": 3,
-                                "response_format": "b64_json",
-                                "size": "512x512"
-                            }
-                            // check if bot is not handling another call
-                            if (!channels[to].openairunning){
-                                channels[to].openairunning = true;
-                                bot.say(to,`Generating from "${prompt}" prompt...`);
-                                deleteOpenAIImage(to);
-                                needle.post(openAIAPIGenerationsUrl, data, {headers: {"Content-Type": "application/json","Authorization": `Bearer ${openAIAPIToken}`}},function (error,response){
-                                    if (!error && response.statusCode == 200){
-                                        if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
-                                            fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
-                                        }
-                                        let buffer = null;
-                                        for (let i=0; i < response.body.data.length ; i++){
-                                            buffer = Buffer.from(response.body.data[i].b64_json, "base64");
-                                            fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
-                                        }
-                                        try {
-                                            // join 3 images into a single row
-                                            joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
-                                                img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
-                                                    postOpenAIImage(to,from,prompt);
+                                let prompt = message.slice(message.match(/\.openai\s.+$/).index+8).trim(),
+                                    data = {
+                                    "prompt": prompt,
+                                    "n": 3,
+                                    "response_format": "b64_json",
+                                    "size": "512x512"
+                                }
+                                // check if bot is not handling another call
+                                if (!channels[to].openairunning){
+                                    channels[to].openairunning = true;
+                                    bot.say(to,`Generating from "${prompt}" prompt...`);
+                                    deleteOpenAIImage(to);
+                                    needle.post(openAIAPIGenerationsUrl, data, {headers: {"Content-Type": "application/json","Authorization": `Bearer ${openaiAPIKey}`}},function (error,response){
+                                        if (!error && response.statusCode == 200){
+                                            if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
+                                                fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
+                                            }
+                                            let buffer = null;
+                                            for (let i=0; i < response.body.data.length ; i++){
+                                                buffer = Buffer.from(response.body.data[i].b64_json, "base64");
+                                                fs.writeFileSync(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64");
+                                            }
+                                            try {
+                                                // join 3 images into a single row
+                                                joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                                    img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                        postOpenAIImage(to,from,prompt);
+                                                    });
                                                 });
-                                            });
-                                        } catch (error) {
-                                            channels[to].openairunning = false;
-                                            bot.say(to,`Error joining dalle images into final image: ${error}`);
-                                        }
-                                    } else {
-                                        if (response.statusCode == 524){
-                                            bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                            } catch (error) {
+                                                channels[to].openairunning = false;
+                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                            }
                                         } else {
-                                            bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                                            if (response.statusCode == 524){
+                                                bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                            } else {
+                                                bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                                            }
+                                            channels[to].openairunning = false;
                                         }
-                                        channels[to].openairunning = false;
-                                    }
-                                });
-                            } else {
-                                bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                    });
+                                } else {
+                                    bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                }
                             }
                         }
+                    } else {
+                        bot.say(from,`You don't have an OpenAI API Key, create an account and get one from https://beta.openai.com/account/api-keys and then do /msg ${config.irc.nick} .openaiapikey <yourkey>`);
                     }
+                } else {
+                    bot.say(from,`The 'openai' module is not enabled in ${to}.`);
+                }
+        } else
+        if (message.match(/\.openaiapikey\s.+$/)) {
+            let key = message.slice(14);
+            if (await setUserOpenaiAPIKey(from,key)){
+                bot.say(from,`Saved OpenAI API Key for ${from}.`);
             } else {
-                bot.say(from,`The 'openai' module is not enabled in ${to}.`);
+                bot.say(from,`Error saving OpenAI API Key for ${from}.`);
+            }
+        } else
+        if (message.match(/\.deleteopenaiapikey$/)) {
+            if (await deleteUserOpenaiAPIKey(from)){
+                bot.say(from,`Removed OpenAI API Key for ${from}.`);
+            } else {
+                bot.say(from,`Error deleting OpenAI API Key for ${from}.`);
             }
         } else
         if (message.match(/\.imdb\s.+$/)) {
