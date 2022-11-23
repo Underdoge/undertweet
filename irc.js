@@ -323,15 +323,20 @@ function setUserOpenaiAPIKey (nick, key) {
 function deleteUserOpenaiAPIKey (nick) {
     return new Promise ( resolve => {
         const db = getDatabase();
-        const deleteAPIKey = db.prepare("delete from openai_apikeys where t_nick = ?");
-        try {
-            const deletekey = db.transaction ( (nick) => {
-                deleteAPIKey.run(nick);
-            });
-            deletekey(nick);
-            resolve(true);
-        } catch (err) {
-            bot.say(nick,err);
+        const APIKey = db.prepare("select t_key from openai_apikeys where t_nick = ?").get(nick);
+        if (APIKey != undefined && APIKey != "") {
+            const deleteAPIKey = db.prepare("delete from openai_apikeys where t_nick = ?");
+            try {
+                const deletekey = db.transaction ( (nick) => {
+                    deleteAPIKey.run(nick);
+                });
+                deletekey(nick);
+                resolve(true);
+            } catch (err) {
+                bot.say(nick,err);
+                resolve(false);
+            }
+        } else {
             resolve(false);
         }
     });
@@ -1265,25 +1270,25 @@ bot.on('message', async function(event) {
                             }
                         }
                     } else {
-                        bot.say(from,`You don't have an OpenAI API Key, create an account and get one from https://beta.openai.com/account/api-keys and then do /msg ${config.irc.nick} .openaiapikey <yourkey>`);
+                        bot.say(from,`You don't have an OpenAI API Key, create an account and get one from https://beta.openai.com/account/api-keys and then do /msg ${config.irc.nick} .setopenaiapikey <yourkey>`);
                     }
                 } else {
                     bot.say(from,`The 'openai' module is not enabled in ${to}.`);
                 }
         } else
-        if (message.match(/\.openaiapikey\s.+$/)) {
-            let key = message.slice(14);
+        if (message.match(/\.setopenaiapikey\s.+$/)) {
+            let key = message.slice(17);
             if (await setUserOpenaiAPIKey(from,key)){
                 bot.say(from,`Saved OpenAI API Key for ${from}.`);
             } else {
                 bot.say(from,`Error saving OpenAI API Key for ${from}.`);
             }
         } else
-        if (message.match(/\.deleteopenaiapikey$/)) {
+        if (message.match(/\.delopenaiapikey$/)) {
             if (await deleteUserOpenaiAPIKey(from)){
                 bot.say(from,`Removed OpenAI API Key for ${from}.`);
             } else {
-                bot.say(from,`Error deleting OpenAI API Key for ${from}.`);
+                bot.say(from,`No OpenAI API Key found for ${from}.`);
             }
         } else
         if (message.match(/\.imdb\s.+$/)) {
@@ -1402,7 +1407,12 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
             setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.dalle <prompt> - request dall-e images from prompt');},1000);
+            setTimeout(function() { bot.say(from,'.dalle <prompt> - generate dall-e images from prompt');},1000);
+            setTimeout(function() { bot.say(from,'.openai <prompt> - generate OpenAI Dall-E images from prompt');},1000);
+            setTimeout(function() { bot.say(from,'.openai URL - generate OpenAI Dall-E images from PNG image');},1000);
+            setTimeout(function() { bot.say(from,'.openai <1-3> - generate OpenAI Dall-E image variation from image number.');},1000);
+            setTimeout(function() { bot.say(from,'.setopenaiapikey <api_key> - set OpenAI API Key');},1000);
+            setTimeout(function() { bot.say(from,'.delopenaiapikey - delete OpenAI API Key');},1000);
             setTimeout(function() { bot.say(from,'.help - this help message.');},1000);
         } else
         if (message.match(/^\.bots$/)) {
