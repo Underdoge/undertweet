@@ -1,8 +1,5 @@
 'use strict';
 
-const { deepStrictEqual } = require('assert');
-const { url } = require('inspector');
-
 const
     cheerio = require('cheerio'),
     sharp = require('sharp'),
@@ -910,15 +907,20 @@ bot.on('message', async function(event) {
                 let url=message.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)[0];
                 if(!(url.match(/youtu.be/)) && !(url.match(/youtube\.com/))){
                     let options = { follow_max: 5, headers: {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'}};
-                    needle.get(url,options,function(err,r,body) {
-                        if (!(body instanceof Buffer)) {
-                            if (body.match(/<title>(.*?)<\/title>/)) {
-                                let title = body.match(/<title>(.*?)<\/title>/)[1];
-                                htmlKeys.forEach( curr => {
-                                    title = title.replace(new RegExp(curr,'g'),unescape(curr,title));
-                                });
-                                bot.say(to,`Title: ${title}`);
-                            } 
+                    let stream = needle.get(url, options);
+                    stream.on('readable', function() {
+                        let chunk = null;
+                        if (chunk = this.read()){
+                            if (chunk != "\r\n") {
+                                if (chunk.toString().match(/<title>(.*?)<\/title>/)) {
+                                    let title = chunk.toString().match(/<title>(.*?)<\/title>/)[1];
+                                    htmlKeys.forEach( curr => {
+                                        title = title.replace(new RegExp(curr,'g'),unescape(curr,title));
+                                    });
+                                    bot.say(to,`Title: ${title}`);
+                                    stream.request.abort();
+                                }
+                            }
                         }
                     });
                 }
