@@ -33,7 +33,10 @@ const
         'day': 'numeric', 'hour': '2-digit', 'minute': '2-digit',
     },
     dateOptionsShort = {
-        'timeZone':'America/Mexico_City', 'month': 'short', 'day': 'numeric', 'year': 'numeric'
+        'timeZone':'America/Mexico_City', 'month': 'short', 'weekday': 'short', 'day': 'numeric', 'year': 'numeric','hour': '2-digit', 'minute': '2-digit',
+    },
+    dateOptionsShorter = {
+        'timeZone':'America/Mexico_City', 'month': 'short', 'day': 'numeric', 'year': 'numeric','hour': '2-digit', 'minute': '2-digit',
     },
     htmlMap ={
         '&amp;': '&', '&lt;':'<', '&gt;':'>',
@@ -84,12 +87,12 @@ function sendSpace(to,title,state,started_at,host_ids,participant_count){
     if (state == "live") {
     message = `\
 Twitter Space "${colors.teal(title)}" is now live 🔴, \
-started on ${new Date(started_at).toLocaleDateString('en-us', dateOptions)} \
+started on ${new Date(started_at).toLocaleDateString('en-us', dateOptionsShort)} \
 and has ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participants.`;
     } else { 
     message = `\
 Twitter Space "${colors.teal(title)}" has ended, \
-started on ${new Date(started_at).toLocaleDateString('en-us', dateOptions)} \
+started on ${new Date(started_at).toLocaleDateString('en-us', dateOptionsShort)} \
 and had ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participants.`;
     }
     bot.say (to,message);
@@ -98,16 +101,16 @@ and had ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participa
 function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
     let message = null, hours="", minutes="", seconds="";
     if (parseInt(likes) > 1000000) {
-        likes = Math.floor(parseInt(likes)/1000000).toString() + ((parseInt(likes)%1000000) > 0 ? "." + (parseInt(likes)%1000000).toString() + "M": "M" );
+        likes = (Math.round(parseInt(likes)/1000000 * 100) / 100).toString() + "M";
     } else 
     if (parseInt(likes) > 1000) {
-        likes = Math.floor(parseInt(likes)/1000).toString() + ((parseInt(likes)%1000) > 0 ? "." + (parseInt(likes)%100).toString() + "K": "K" );
+        likes = (Math.round(parseInt(likes)/1000 * 100) / 100).toString() + "K";
     }
     if (parseInt(views) > 1000000) {
-        views = Math.floor(parseInt(views)/1000000).toString() + ((parseInt(views)%1000000) > 0 ? "." + (parseInt(views)%1000000).toString() + "M": "M" );
+        views = (Math.round(parseInt(views)/1000000 * 100) / 100).toString() + "M";
     } else 
     if (parseInt(views) > 1000) {
-        views = Math.floor(parseInt(views)/1000).toString() + ((parseInt(views)%1000) > 0 ? "." + (parseInt(views)%1000).toString() + "K": "K" );
+        views = (Math.round(parseInt(views)/1000 * 100) / 100).toString() + "K";
     }
     desc = desc.replaceAll("\n"," ").replaceAll("  "," ");
     hours = (duration.match(/[0-9]{1,2}H/) ? duration.match(/[0-9]{1,2}H/)[0].slice(0,duration.match(/[0-9]{1,2}H/)[0].indexOf("H")) : "");
@@ -115,7 +118,7 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
     seconds = (duration.match(/[0-9]{1,2}S/) ? (parseInt(duration.match(/[0-9]{1,2}S/)[0].slice(0,duration.match(/[0-9]{1,2}S/)[0].indexOf("S"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}S/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}S/)[0].slice(0,2)) : "00");
     message = `\
 ${title.toLocaleString('en-us')} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
-· ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
+· ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
 ${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · \
 ${colors.teal(`\"${desc.toLocaleString('en-us') + "\""}`)}`;
     if (message.length > 334)
@@ -128,12 +131,12 @@ function sendTweet(to,text,username,date,retweets,favorites,isQuote,quotedUserna
     if ( !isQuote ) {
         message = `\
 ${colors.teal(text)} · by ${username} \
-on ${new Date(date).toLocaleTimeString('en-us', dateOptions)} ·\
+on ${new Date(date).toLocaleTimeString('en-us', dateOptionsShort)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`;
         if (message.length > 334){
             bot.say(to,`${colors.teal(text)}`);
-            bot.say(to,`by ${username} on ${new Date(date).toLocaleTimeString('en-us', dateOptions)} ·${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
+            bot.say(to,`by ${username} on ${new Date(date).toLocaleTimeString('en-us', dateOptionsShort)} ·${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
         } else {
             bot.say (to,message);
@@ -141,14 +144,14 @@ ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
     } else {
         message = `\
 ${colors.teal(text)} · by ${username} \
-on ${new Date(date).toLocaleDateString('en-us', dateOptions)} ·\
+on ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)} \
 Quoting @${quotedUsername}: ${colors.teal(quotedText)}`;
         if (message.length > 334) {
             bot.say(to,`${colors.teal(text)}`);
             bot.say(to,`by ${username} \
-on ${new Date(date).toLocaleDateString('en-us', dateOptions)} ·\
+on ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
             bot.say(to,`Quoting @${quotedUsername}: ${colors.teal(quotedText)}`);
