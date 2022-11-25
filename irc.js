@@ -109,7 +109,7 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
     if (parseInt(views) > 1000) {
         views = Math.floor(parseInt(views)/1000).toString() + ((parseInt(views)%1000) > 0 ? "." + (parseInt(views)%1000).toString() + "K": "K" );
     }
-
+    desc = desc.replaceAll("\n"," ").replaceAll("  "," ");
     hours = (duration.match(/[0-9]{1,2}H/) ? duration.match(/[0-9]{1,2}H/)[0].slice(0,duration.match(/[0-9]{1,2}H/)[0].indexOf("H")) : "");
     minutes = (duration.match(/[0-9]{1,2}M/) ? (parseInt(duration.match(/[0-9]{1,2}M/)[0].slice(0,duration.match(/[0-9]{1,2}M/)[0].indexOf("M"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}M/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}M/)[0].slice(0,2)) : "00");
     seconds = (duration.match(/[0-9]{1,2}S/) ? (parseInt(duration.match(/[0-9]{1,2}S/)[0].slice(0,duration.match(/[0-9]{1,2}S/)[0].indexOf("S"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}S/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}S/)[0].slice(0,2)) : "00");
@@ -117,10 +117,10 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
 ${title.toLocaleString('en-us')} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
 · ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
 ${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · \
-${colors.teal(`"${desc.toLocaleString('en-us')}"`)}`;
-        if (message.length > 334)
-            message = message.slice(0, 331) + "...\"";
-        bot.say (to,message);
+${colors.teal(`\"${desc.toLocaleString('en-us') + "\""}`)}`;
+    if (message.length > 334)
+        message = message.slice(0, 330) + "...\"";
+    bot.say (to,message);
 }
 
 function sendTweet(to,text,username,date,retweets,favorites,isQuote,quotedUsername,quotedText){
