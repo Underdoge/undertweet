@@ -24,6 +24,7 @@ const
     ghettyUrl = config.ghetty.url,
     youtubeAPIKey = config.youtube.api_key,
     youtubeVideosURL = config.youtube.videos_url,
+    youtubeSearchURL = config.youtube.search_url,
     twitterUrl = 'https://api.twitter.com/1.1/users/show.json',
     openAIAPIGenerationsUrl = config.openAI.api_generations_url,
     openAIAPIVariationsUrl = config.openAI.api_variations_url,
@@ -990,8 +991,7 @@ bot.on('message', async function(event) {
                     });
                 }
             }
-        } else
-        // get twitter.com or t.co link
+        } else //youtube link
         if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/) || message.match(/(https?:\/\/)?(www\.)?youtu\.be\/.+/)) {
             if (await isModuleEnabledInChannel(to,"youtube read")) {
                 let likes = 0, title = "", date = "", description = "", account = "", duration = "", v = "", youtubeapirequest = "", views = "", result = "";
@@ -1019,10 +1019,51 @@ bot.on('message', async function(event) {
                             likes = result.items[0].statistics.likeCount;
                             views = result.items[0].statistics.viewCount;
                             duration = result.items[0].contentDetails.duration;
+                            sendYouTubevideo(to,title,description,account,date,likes,views,duration);
                         }
-                        sendYouTubevideo(to,title,description,account,date,likes,views,duration);
                     });
                 }
+            }
+        } else
+        if (message.match(/^\.yt\s.+$/)) {
+            if (await isModuleEnabledInChannel(to,"youtube search")) {
+                let likes = 0, title = "", date = "", description = "", account = "", duration = "", query = "", id = "", youtubeapirequest = "", views = "", result = "";
+                query = message.slice(4);
+                if (query != "") {
+                    youtubeapirequest = youtubeSearchURL + "?part=snippet&maxResults=5&q=" + query + "&safeSearch=none&type=video&key=" + youtubeAPIKey;
+                    needle.get(youtubeapirequest, { headers: { "Accept": "application/json"}}, function(err, r, res) {
+                        if (res.items.length >= 1) {
+                            res.items.forEach((video,i) => {
+                                if (video.snippet.title == query) {
+                                    id = video.id.videoId;
+                                }
+                            });
+                            if (id == "")
+                                id = res.items[0].id.videoId;
+                            youtubeapirequest = youtubeVideosURL +"?part=statistics,snippet,contentDetails&id=" + id + "&key=" + youtubeAPIKey;
+                            needle.get(youtubeapirequest, { headers: { "Accept": "application/json"}}, function(err, r, result) {
+                                if (err) {
+                                    bot.say(from,`Error: ${err}`);
+                                    throw Error(err);
+                                }
+                                if (!result.errors && result) {
+                                    title = result.items[0].snippet.title;
+                                    date = result.items[0].snippet.publishedAt;
+                                    description = result.items[0].snippet.description;
+                                    account = result.items[0].snippet.channelTitle;
+                                    likes = result.items[0].statistics.likeCount;
+                                    views = result.items[0].statistics.viewCount;
+                                    duration = result.items[0].contentDetails.duration;
+                                    sendYouTubevideo(to,title,description,account,date,likes,views,duration);
+                                }
+                            });
+                        } else {
+                            bot.say(from,`No YouTube results for '${query}'`);
+                        }
+                    });
+                }
+            } else {
+                bot.say(from,`The 'youtube search' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/twitter\.com\/i\/spaces\/\w+/)) {
@@ -1049,7 +1090,7 @@ bot.on('message', async function(event) {
                 }
             }
         } else
-        // any non-twitter url and ignore youtube urls and files
+        // any non-twitter non-youtube url and ignore files
         if (message.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)) {
             if (await isModuleEnabledInChannel(to,"url read")) {
                 let url=message.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)[0];
@@ -1096,7 +1137,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read'){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
                 commands.push({'nick': from, 'module': module, 'channel': to, 'host': hostname});
                 bot.whois(from,enable);
             } else {
@@ -1108,7 +1149,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read'){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
                 commands.push({'nick': from, 'module': module, 'channel': to, 'host': hostname});
                 bot.whois(from,disable);
             } else {
@@ -1573,7 +1614,7 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb', 'youtube read'.`);},1000);
+            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb', 'youtube read', 'youtube search'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
