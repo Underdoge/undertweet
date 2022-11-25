@@ -22,6 +22,9 @@ const
     password = config.irc.pass,
     dalleUrl = config.dalle.api_url,
     ghettyUrl = config.ghetty.url,
+    youtubeAPIKey = config.youtube.api_key,
+    youtubeAPIAccessToken = config.youtube.client_secret,
+    youtubeVideosURL = config.youtube.videos_url,
     twitterUrl = 'https://api.twitter.com/1.1/users/show.json',
     openAIAPIGenerationsUrl = config.openAI.api_generations_url,
     openAIAPIVariationsUrl = config.openAI.api_variations_url,
@@ -29,6 +32,9 @@ const
         'timeZone':'America/Mexico_City',
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
         'day': 'numeric', 'hour': '2-digit', 'minute': '2-digit',
+    },
+    dateOptionsShort = {
+        'timeZone':'America/Mexico_City', 'month': 'short', 'day': 'numeric', 'year': 'numeric'
     },
     htmlMap ={
         '&amp;': '&', '&lt;':'<', '&gt;':'>',
@@ -88,6 +94,30 @@ started on ${new Date(started_at).toLocaleDateString('en-us', dateOptions)} \
 and had ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participants.`;
     }
     bot.say (to,message);
+}
+
+function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
+    let message = null;
+    if (parseInt(likes) > 1000000) {
+        likes = Math.floor(parseInt(likes)/1000000).toString() + ((parseInt(likes)%1000000) > 0 ? "." + (parseInt(likes)%1000000).toString() + "M": "M" );
+    } else 
+    if (parseInt(likes) > 1000) {
+        likes = Math.floor(parseInt(likes)/1000).toString() + ((parseInt(likes)%1000) > 0 ? "." + (parseInt(likes)%100).toString() + "K": "K" );
+    }
+    if (parseInt(views) > 1000000) {
+        views = Math.floor(parseInt(views)/1000000).toString() + ((parseInt(views)%1000000) > 0 ? "." + (parseInt(views)%1000000).toString() + "M": "M" );
+    } else 
+    if (parseInt(views) > 1000) {
+        views = Math.floor(parseInt(views)/1000).toString() + ((parseInt(views)%1000) > 0 ? "." + (parseInt(views)%1000).toString() + "K": "K" );
+    }
+    message = `\
+${title.toLocaleString('en-us')} (${new Date(duration).toLocaleTimeString('en-us',dateOptionsShort)}) ${views.toLocaleString('en-us')} views · ${account} \
+· ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
+${colors.green(` 🖒 ${likes.toLocaleString('en-us')}`)} · \
+${colors.teal(`"${desc.toLocaleString('en-us')}"`)}`;
+        if (message.length > 334)
+            message = message.slice(0, 331) + "...\"";
+        bot.say (to,message);
 }
 
 function sendTweet(to,text,username,date,retweets,favorites,isQuote,quotedUsername,quotedText){
@@ -695,7 +725,7 @@ bot.on('connected', async function() {
             bot.say("#testing",`Error initializing database...`);
         }
     }
-    stream.startStream(db);
+    //stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
@@ -877,6 +907,34 @@ bot.on('message', async function(event) {
                 }
             }
         } else
+        // get twitter.com or t.co link
+        if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/) || message.match(/(https?:\/\/)?(www\.)?youtu\.be\/.+/)) {
+            if (await isModuleEnabledInChannel(to,"youtube read")) {
+                let likes = 0, title = "", date = "", description = "", account = "", duration = "", v = "", youtubeapirequest = "", views = "", result = "";
+                if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/)){
+                    v = message.slice(message.match(/v=\w+/).index + 2);
+                } else {
+                    v = message.slice(message.match(/\.be\/\w+/).index + 4);
+                }
+                youtubeapirequest = youtubeVideosURL + "?part=statistics,snippet,contentDetails&id=" + v + "&key=" + youtubeAPIKey;
+                needle.get(youtubeapirequest, { headers: { "Accept-Language": "en-US", "Accept": "application/json"}}, function(err, r, result) {
+                    if (err) {
+                    bot.say(from,`Error: ${err}`);
+                    throw Error(err);
+                    }
+                    if (!result.errors && result) {
+                        title = result.items[0].snippet.title;
+                        date = result.items[0].snippet.publishedAt;
+                        description = result.items[0].snippet.description;
+                        account = result.items[0].snippet.channelTitle;
+                        likes = result.items[0].statistics.likeCount;
+                        views = result.items[0].statistics.viewCount;
+                        duration = result.items[0].contentDetails.duration;
+                    }
+                    sendYouTubevideo(to,title,description,account,date,likes,views,duration);
+                });
+            }
+        } else
         if (message.match(/twitter\.com\/i\/spaces\/\w+/)) {
             if (await isModuleEnabledInChannel(to,"twitter expand")) {
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
@@ -905,25 +963,23 @@ bot.on('message', async function(event) {
         if (message.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)) {
             if (await isModuleEnabledInChannel(to,"url read")) {
                 let url=message.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)[0];
-                if(!(url.match(/youtu.be/)) && !(url.match(/youtube\.com/))){
-                    let options = { follow_max: 5, headers: {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'}};
-                    let stream = needle.get(url, options);
-                    stream.on('readable', function() {
-                        let chunk = null;
-                        if (chunk = this.read()){
-                            if (chunk != "\r\n") {
-                                if (chunk.toString().match(/<title>(.*?)<\/title>/)) {
-                                    let title = chunk.toString().match(/<title>(.*?)<\/title>/)[1];
-                                    htmlKeys.forEach( curr => {
-                                        title = title.replace(new RegExp(curr,'g'),unescape(curr,title));
-                                    });
-                                    bot.say(to,`Title: ${title}`);
-                                    stream.request.abort();
-                                }
+                let options = { follow_max: 5, headers: {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'}};
+                let stream = needle.get(url, options);
+                let chunk = null;
+                stream.on('readable', function() {
+                    if (chunk = this.read()){
+                        if (chunk != "\r\n") {
+                            if (chunk.toString().match(/<title>(.*?)<\/title>/)) {
+                                let title = chunk.toString().match(/<title>(.*?)<\/title>/)[1];
+                                htmlKeys.forEach( curr => {
+                                    title = title.replace(new RegExp(curr,'g'),unescape(curr,title));
+                                });
+                                bot.say(to,`Title: ${title}`);
+                                stream.request.abort();
                             }
                         }
-                    });
-                }
+                    }
+                });
             }
         } else
         if (message.match(/^\.modules$/)) {
@@ -934,7 +990,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb'){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read'){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,enable);
             } else {
@@ -946,7 +1002,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb'){
+            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read'){
                 commands.push({'nick': from, 'module': module, 'channel': to});
                 bot.whois(from,disable);
             } else {
@@ -1148,6 +1204,9 @@ bot.on('message', async function(event) {
                                         } else {
                                             if (response.statusCode == 524){
                                                 bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                            } else
+                                            if (response.statusCode == 401){
+                                                bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided: NO. You can find your API key at https://beta.openai.com.`);
                                             } else {
                                                 bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                             }
@@ -1211,6 +1270,9 @@ bot.on('message', async function(event) {
                                             } else {
                                                 if (response.statusCode == 524){
                                                     bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                                } else
+                                                if (response.statusCode == 401){
+                                                    bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided: NO. You can find your API key at https://beta.openai.com.`);
                                                 } else {
                                                     bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                                 }
@@ -1260,6 +1322,9 @@ bot.on('message', async function(event) {
                                         } else {
                                             if (response.statusCode == 524){
                                                 bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                            } else
+                                            if (response.statusCode == 401){
+                                                bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided: NO. You can find your API key at https://beta.openai.com.`);
                                             } else {
                                                 bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                             }
@@ -1317,7 +1382,6 @@ bot.on('message', async function(event) {
                         imdbquery += "&release_date=" + message.slice(message.match(/[1-2][0,8,9]([0-9]){2}/).index,message.match(/[1-2][0,8,9]([0-9]){2}/).index+4) + "-01-01,";
                     }
                     // check if bot is not handling another call
-                    needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
                         let results = 0, index = 0, details = "", url = "", out = "", votes = "", gross = "";
@@ -1403,7 +1467,7 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb'.`);},1000);
+            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb', 'youtube read'.`);},1000);
             setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
             setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
             setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
@@ -1431,3 +1495,4 @@ bot.on('registered', function (){
 })
 
 bot.connect({host,port,tls,nick,username,gecos,password});
+needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
