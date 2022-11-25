@@ -94,7 +94,7 @@ and had ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participa
     bot.say (to,message);
 }
 
-function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
+function sendYouTubevideo(to,title,desc,account,date,likes,views,duration,id) {
     let message = null, hours="", minutes="", seconds="";
     if (parseInt(likes) > 1000000) {
         likes = (Math.round(parseInt(likes)/1000000 * 100) / 100).toString() + "M";
@@ -112,10 +112,17 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
     hours = (duration.match(/[0-9]{1,2}H/) ? duration.match(/[0-9]{1,2}H/)[0].slice(0,duration.match(/[0-9]{1,2}H/)[0].indexOf("H")) : "");
     minutes = (duration.match(/[0-9]{1,2}M/) ? (parseInt(duration.match(/[0-9]{1,2}M/)[0].slice(0,duration.match(/[0-9]{1,2}M/)[0].indexOf("M"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}M/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}M/)[0].slice(0,2)) : "00");
     seconds = (duration.match(/[0-9]{1,2}S/) ? (parseInt(duration.match(/[0-9]{1,2}S/)[0].slice(0,duration.match(/[0-9]{1,2}S/)[0].indexOf("S"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}S/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}S/)[0].slice(0,2)) : "00");
-    message = `\
+    if (!id) {
+        message = `\
 ${colors.teal(title.toLocaleString('en-us'))} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
 · ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
 ${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · \"${desc.toLocaleString('en-us')}\")}`;
+    } else {
+        message = `\
+${colors.teal(title.toLocaleString('en-us'))} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
+· ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
+${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · https://youtu.be/${id} · \"${desc.toLocaleString('en-us')}\")}`;
+    }
     if (message.length > 350)
         message = message.slice(0, 346) + "...\"";
     bot.say (to,message);
@@ -1054,7 +1061,7 @@ bot.on('message', async function(event) {
                                     likes = result.items[0].statistics.likeCount;
                                     views = result.items[0].statistics.viewCount;
                                     duration = result.items[0].contentDetails.duration;
-                                    sendYouTubevideo(to,title,description,account,date,likes,views,duration);
+                                    sendYouTubevideo(to,title,description,account,date,likes,views,duration,id);
                                 }
                             });
                         } else {
