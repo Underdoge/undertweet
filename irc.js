@@ -112,12 +112,11 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration) {
     minutes = (duration.match(/[0-9]{1,2}M/) ? (parseInt(duration.match(/[0-9]{1,2}M/)[0].slice(0,duration.match(/[0-9]{1,2}M/)[0].indexOf("M"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}M/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}M/)[0].slice(0,2)) : "00");
     seconds = (duration.match(/[0-9]{1,2}S/) ? (parseInt(duration.match(/[0-9]{1,2}S/)[0].slice(0,duration.match(/[0-9]{1,2}S/)[0].indexOf("S"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}S/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}S/)[0].slice(0,2)) : "00");
     message = `\
-${title.toLocaleString('en-us')} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
+${colors.teal(title.toLocaleString('en-us'))} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
 · ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
-${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · \
-${colors.teal(`\"${desc.toLocaleString('en-us') + "\""}`)}`;
-    if (message.length > 334)
-        message = message.slice(0, 330) + "...\"";
+${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · \"${desc.toLocaleString('en-us')}\")}`;
+    if (message.length > 350)
+        message = message.slice(0, 346) + "...\"";
     bot.say (to,message);
 }
 
@@ -129,7 +128,7 @@ ${colors.teal(text)} · by ${username} \
 on ${new Date(date).toLocaleTimeString('en-us', dateOptionsShort)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`;
-        if (message.length > 334){
+        if (message.length > 350){
             bot.say(to,`${colors.teal(text)}`);
             bot.say(to,`by ${username} on ${new Date(date).toLocaleTimeString('en-us', dateOptionsShort)} ·${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
@@ -143,7 +142,7 @@ on ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
 ${colors.green(` ♻ ${retweets.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)} \
 Quoting @${quotedUsername}: ${colors.teal(quotedText)}`;
-        if (message.length > 334) {
+        if (message.length > 350) {
             bot.say(to,`${colors.teal(text)}`);
             bot.say(to,`by ${username} \
 on ${new Date(date).toLocaleDateString('en-us', dateOptionsShort)} ·\
@@ -810,7 +809,7 @@ bot.on('connected', async function() {
             bot.say("#testing",`Error initializing database...`);
         }
     }
-    stream.startStream(db);
+    //stream.startStream(db);
 });
 
 bot.on('message', async function(event) {
@@ -1545,7 +1544,7 @@ bot.on('message', async function(event) {
                                         });
                                     }
                                     out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")} · ${url}`;
-                                    if (out.length > 334) {
+                                    if (out.length > 350) {
                                         out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")}`;
                                         bot.say(to,out);
                                         bot.say(to,url);
