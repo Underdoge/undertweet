@@ -27,16 +27,11 @@ const
     twitterUrl = 'https://api.twitter.com/1.1/users/show.json',
     openAIAPIGenerationsUrl = config.openAI.api_generations_url,
     openAIAPIVariationsUrl = config.openAI.api_variations_url,
-    dateOptions = {
-        'timeZone':'America/Mexico_City',
-        'weekday': 'long', 'year': 'numeric', 'month': 'short',
-        'day': 'numeric', 'hour': '2-digit', 'minute': '2-digit',
-    },
     dateOptionsShort = {
         'timeZone':'America/Mexico_City', 'month': 'short', 'weekday': 'short', 'day': 'numeric', 'year': 'numeric','hour': '2-digit', 'minute': '2-digit',
     },
     dateOptionsShorter = {
-        'timeZone':'America/Mexico_City', 'month': 'short', 'day': 'numeric', 'year': 'numeric','hour': '2-digit', 'minute': '2-digit',
+        'timeZone':'America/Mexico_City', 'month': 'short', 'day': 'numeric', 'year': 'numeric'
     },
     htmlMap ={
         '&amp;': '&', '&lt;':'<', '&gt;':'>',
