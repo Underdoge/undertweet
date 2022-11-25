@@ -1206,7 +1206,7 @@ bot.on('message', async function(event) {
                                                 bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
                                             } else
                                             if (response.statusCode == 401){
-                                                bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided: NO. You can find your API key at https://beta.openai.com.`);
+                                                bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
                                             } else {
                                                 bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                             }
@@ -1272,7 +1272,7 @@ bot.on('message', async function(event) {
                                                     bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
                                                 } else
                                                 if (response.statusCode == 401){
-                                                    bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided: NO. You can find your API key at https://beta.openai.com.`);
+                                                    bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
                                                 } else {
                                                     bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                                 }
@@ -1324,7 +1324,7 @@ bot.on('message', async function(event) {
                                                 bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
                                             } else
                                             if (response.statusCode == 401){
-                                                bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided: NO. You can find your API key at https://beta.openai.com.`);
+                                                bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
                                             } else {
                                                 bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                             }
