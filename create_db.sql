@@ -7,7 +7,7 @@ PRAGMA foreign_keys = off;
 BEGIN TRANSACTION;
 
 -- Table: channels
-CREATE TABLE IF NOT EXISTS channels (t_channel_name TEXT PRIMARY KEY NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS channels (t_channel_name TEXT PRIMARY KEY NOT NULL UNIQUE, ignore BOOLEAN);
 
 -- Table: handles
 CREATE TABLE IF NOT EXISTS handles (t_channel_name TEXT REFERENCES channels (t_channel_name) NOT NULL, t_handle_name TEXT NOT NULL);

@@ -404,14 +404,15 @@ function modules (event) {
     let
         nick = null,
         removeIndex = null,
+        host = null,
         to = null;
     commands.forEach ( async function ( command, index ) {
         if ( command.nick == event.nick ) {
             nick = event.nick;
             to = command.channel;
+            host = command.host;
             removeIndex = index;
-            console.log(JSON.stringify(event));
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
                     bot.say(nick, `Enabled modules in ${to}: ${modules}.`);
@@ -427,20 +428,86 @@ function modules (event) {
     commands.splice(removeIndex,1);
 }
 
+function ignore_channel (event) {
+    let
+    removeIndex = null,
+    nick = null,
+    to = null,
+    host = null,
+    db = getDatabase();
+    commands.forEach ( function ( command, index ) {
+        if ( command.nick == event.nick ) {
+            nick = event.nick,
+            to = command.channel;
+            host = command.host;
+            removeIndex = index;
+            if (config.irc.adminHostnames.indexOf(host) != -1 ) {
+                const ignorechannel = db.prepare('replace into channels (t_channel_name, ignore) values (?, true)');
+                try {
+                    const ignore = db.transaction( (to) => {
+                        ignorechannel.run(to);
+                    });
+                    ignore(to);
+                    bot.say(nick,`Now ignoring '${to}' channel.`);
+                } catch (err) {
+                    bot.say(nick,err);
+                }
+            } else {
+                bot.say(nick, 'You must be bot admin to perform that action.');
+            }
+        }
+    });
+    commands.splice(removeIndex,1);
+}
+
+function unignore_channel (event) {
+    let
+    removeIndex = null,
+    to = null,
+    nick = null,
+    host = null,
+    db = getDatabase();
+    commands.forEach ( function ( command, index ) {
+        if ( command.nick == event.nick ) {
+            nick = event.nick,
+            to = command.channel;
+            host = command.host;
+            removeIndex = index;
+            if (config.irc.adminHostnames.indexOf(host) != -1 ) {
+                const ignorechannel = db.prepare('replace into channels (t_channel_name, ignore) values (?, false)');
+                try {
+                    const ignore = db.transaction( (to) => {
+                        ignorechannel.run(to);
+                    });
+                    ignore(to);
+                    bot.say(nick,`Removed '${to}' channel ignore.`);
+                } catch (err) {
+                    bot.say(nick,err);
+                }
+            } else {
+                bot.say(nick, 'You must be bot admin to perform that action.');
+            }
+        }
+    });
+    commands.splice(removeIndex,1);
+}
+
 function enable (event) {
     let
         nick = null,
         removeIndex = null,
         module = null,
         to = null,
+        host = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             nick = event.nick,
             module = command.module;
             to = command.channel;
+            host = command.host,
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 const joinedchannels = db.prepare("select * from channels where t_channel_name = ?").get(to);
                 if (joinedchannels == undefined) {
                     const newChannel = db.prepare("insert into channels (t_channel_name) values (?)");
@@ -487,14 +554,16 @@ function disable (event) {
         removeIndex = null,
         module = null,
         to = null,
+        host = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
             nick = event.nick,
             module = command.module;
             to = command.channel;
+            host = command.host;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
                     bot.say(nick,`Module '${module}' not enabled in ${to}.`); 
@@ -532,9 +601,10 @@ function follow (event) {
             nick = event.nick,
             handle = command.handle;
             to = command.channel;
+            host = command.host;
             let data = { "screen_name" : handle };
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(event.host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 // IRC USER HAS OPER OR MORE
                 needle.request('get', twitterUrl, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if ( err ) {
@@ -633,13 +703,17 @@ function unfollow (event) {
 function joinChannels(){
     const db = getDatabase();
     return new Promise ( resolve => {
-        const getChannels = db.prepare('select t_channel_name from channels');
+        const getChannels = db.prepare('select t_channel_name, ignore from channels');
         let arrayChannels = [];
         for (const channel of getChannels.iterate()){
-            arrayChannels.push(channel.t_channel_name);
-            bot.join(channel.t_channel_name);
-            channels[channel.t_channel_name] = { running: false };
-            channels[channel.t_channel_name] = { openairunning: false };
+            if (!channel.ignore) {
+                arrayChannels.push(channel.t_channel_name);
+                bot.join(channel.t_channel_name);
+                channels[channel.t_channel_name] = { running: false };
+                channels[channel.t_channel_name] = { openairunning: false };
+            } else {
+                console.log(`Channel ${channel.t_channel_name} was ignored.`);
+            }
         }
         if (arrayChannels.length > 0){
             resolve(arrayChannels);
@@ -693,15 +767,25 @@ bot.on('error', function(err) {
 });
 
 bot.on('invite', function(event) {
+    const db = getDatabase();
     let from=event.nick,
         ident=event.ident,
         hostname=event.hostname,
-        to=event.channel;
-    if ( config.irc.ignoreChannels.indexOf(to) === -1 && config.irc.ignoreHostnames.indexOf(hostname) === -1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1 && event.channel.indexOf(to) >= 0 ) {
+        to=event.channel,
+        isIgnored = true;
+    console.log(`Channel: ${to}`);
+    const ignored = db.prepare("select ignore from channels where t_channel_name = ?").get(to);
+    console.log(`Ignored: ${ignored.ignore}`);
+    if ( ignored == undefined || ignored.ignore == 0) {
+        isIgnored = false;
+    }
+    if ( !isIgnored && config.irc.ignoreHostnames.indexOf(hostname) === -1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1 && event.channel.indexOf(to) >= 0 ) {
         channels.push(event.channel);
         channels[event.channel] = { running: false };
         channels[event.channel] = { openairunning: false };
         bot.join(event.channel);
+    } else {
+        bot.say(from,`Channel '${to}' is server side ignored.`);
     }
 });
 
@@ -720,7 +804,7 @@ bot.on('connected', async function() {
                 bot.join("#testing");
                 bot.say("#testing",`No channels to join, joined #testing in the meantime...`);
             } else {
-                console.log(`Joined channels: ${arrayChannels}`);
+                console.log(`Joined channels: '${arrayChannels}'`);
             }
         } else {
             bot.say("#testing",`Error initializing database...`);
@@ -912,28 +996,34 @@ bot.on('message', async function(event) {
         if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/) || message.match(/(https?:\/\/)?(www\.)?youtu\.be\/.+/)) {
             if (await isModuleEnabledInChannel(to,"youtube read")) {
                 let likes = 0, title = "", date = "", description = "", account = "", duration = "", v = "", youtubeapirequest = "", views = "", result = "";
-                if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/)){
+                if (message.match(/v=\w+/)){
                     v = message.slice(message.match(/v=\w+/).index + 2);
-                } else {
+                } else
+                if (message.match(/\.be\/\w+/)) {
                     v = message.slice(message.match(/\.be\/\w+/).index + 4);
+                } else
+                if (message.match(/shorts\/\w+/)) {
+                    v = message.slice(message.match(/shorts\/\w+/).index + 7);
                 }
-                youtubeapirequest = youtubeVideosURL + "?part=statistics,snippet,contentDetails&id=" + v + "&key=" + youtubeAPIKey;
-                needle.get(youtubeapirequest, { headers: { "Accept-Language": "en-US", "Accept": "application/json"}}, function(err, r, result) {
-                    if (err) {
-                    bot.say(from,`Error: ${err}`);
-                    throw Error(err);
-                    }
-                    if (!result.errors && result) {
-                        title = result.items[0].snippet.title;
-                        date = result.items[0].snippet.publishedAt;
-                        description = result.items[0].snippet.description;
-                        account = result.items[0].snippet.channelTitle;
-                        likes = result.items[0].statistics.likeCount;
-                        views = result.items[0].statistics.viewCount;
-                        duration = result.items[0].contentDetails.duration;
-                    }
-                    sendYouTubevideo(to,title,description,account,date,likes,views,duration);
-                });
+                if (v != "") {
+                    youtubeapirequest = youtubeVideosURL + "?part=statistics,snippet,contentDetails&id=" + v + "&key=" + youtubeAPIKey;
+                    needle.get(youtubeapirequest, { headers: { "Accept-Language": "en-US", "Accept": "application/json"}}, function(err, r, result) {
+                        if (err) {
+                            bot.say(from,`Error: ${err}`);
+                            throw Error(err);
+                        }
+                        if (!result.errors && result) {
+                            title = result.items[0].snippet.title;
+                            date = result.items[0].snippet.publishedAt;
+                            description = result.items[0].snippet.description;
+                            account = result.items[0].snippet.channelTitle;
+                            likes = result.items[0].statistics.likeCount;
+                            views = result.items[0].statistics.viewCount;
+                            duration = result.items[0].contentDetails.duration;
+                        }
+                        sendYouTubevideo(to,title,description,account,date,likes,views,duration);
+                    });
+                }
             }
         } else
         if (message.match(/twitter\.com\/i\/spaces\/\w+/)) {
@@ -987,12 +1077,28 @@ bot.on('message', async function(event) {
             commands.push({'nick': from, 'channel': to});
             bot.whois(from,modules);
         } else
+        if ( message.match(/^\.ignore\s.+$/)) {            
+            let channel = null;
+            if (message.match(/^\.ignore\s#.+$/)) {
+                channel = message.match(/#.+/);
+                commands.push({'nick': from, 'channel': channel, 'host': hostname});
+                bot.whois(from,ignore_channel);
+            }
+        } else
+        if ( message.match(/^\.unignore\s.+$/)) {            
+            let channel = null;
+            if (message.match(/^\.unignore\s#.+$/)) {
+                channel = message.match(/#.+/);
+                commands.push({'nick': from, 'channel': channel, 'host': hostname});
+                bot.whois(from,unignore_channel);
+            }
+        } else
         if ( message.match(/^\.enable\s\w+(\s\w+)*$/)) {            
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
             if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read'){
-                commands.push({'nick': from, 'module': module, 'channel': to});
+                commands.push({'nick': from, 'module': module, 'channel': to, 'host': hostname});
                 bot.whois(from,enable);
             } else {
                 bot.say(from,`Module '${module}' not found`);
@@ -1004,7 +1110,7 @@ bot.on('message', async function(event) {
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
             if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read'){
-                commands.push({'nick': from, 'module': module, 'channel': to});
+                commands.push({'nick': from, 'module': module, 'channel': to, 'host': hostname});
                 bot.whois(from,disable);
             } else {
                 bot.say(from,`Module '${module}'not found`);
@@ -1019,7 +1125,7 @@ bot.on('message', async function(event) {
                         handle = message.slice(message.search(/@\w+$/)+1);
                     else
                         handle = message.slice(message.search(/\s\w+$/)+1);
-                    commands.push({'nick': from, 'handle': handle, 'channel': to});
+                    commands.push({'nick': from, 'handle': handle, 'channel': to, 'host': hostname});
                     bot.whois(from,follow);
                 } else // No auth data, ask user to authenticate bot
                     bot.say(from,'No auth data.');
@@ -1037,7 +1143,7 @@ bot.on('message', async function(event) {
                     else
                         handle = message.slice(message.search(/\s\w+$/)+1);
                     // add command to commands queue
-                    commands.push({'nick': from, 'handle': handle, 'channel': to});
+                    commands.push({'nick': from, 'handle': handle, 'channel': to, 'host': hostname});
                     bot.whois(from, unfollow);
                 } else // No auth data, ask user to authenticate bot
                     bot.say(from,'No auth data.');
