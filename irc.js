@@ -116,12 +116,12 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration,id) {
         message = `\
 ${colors.teal(title.toLocaleString('en-us'))} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
 · ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
-${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · \"${desc.toLocaleString('en-us')}\"`;
+${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)}${desc ? " · \"" + desc.toLocaleString('en-us') + "\"": ""}`;
     } else {
         message = `\
 ${colors.teal(title.toLocaleString('en-us'))} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
 · ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
-${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · https://youtu.be/${id} · \"${desc.toLocaleString('en-us')}\"`;
+${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · https://youtu.be/${id} · ${desc ? " · \"" + desc.toLocaleString('en-us') + "\"": ""}`;
     }
     if (message.length > 350)
         message = message.slice(0, 346) + "...\"";
