@@ -1002,14 +1002,14 @@ bot.on('message', async function(event) {
         if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/) || message.match(/(https?:\/\/)?(www\.)?youtu\.be\/.+/)) {
             if (await isModuleEnabledInChannel(to,"youtube read")) {
                 let likes = 0, title = "", date = "", description = "", account = "", duration = "", v = "", youtubeapirequest = "", views = "", result = "";
-                if (message.match(/v=\w+/)){
+                if (message.match(/v=.+&?/)){
                     v = message.slice(message.match(/v=.+&?/).index + 2);
                 } else
-                if (message.match(/\.be\/\w+/)) {
+                if (message.match(/\.be\/.+&?/)) {
                     v = message.slice(message.match(/\.be\/.+&?/).index + 4);
                 } else
-                if (message.match(/shorts\/\w+/)) {
-                    v = message.slice(message.match(/shorts\/\w+/).index + 7);
+                if (message.match(/shorts\/.+&?/)) {
+                    v = message.slice(message.match(/shorts\/.+&?/).index + 7);
                 }
                 if (v != "") {
                     youtubeapirequest = youtubeVideosURL + "?part=statistics,snippet,contentDetails&id=" + v + "&key=" + youtubeAPIKey;
