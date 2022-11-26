@@ -1003,10 +1003,10 @@ bot.on('message', async function(event) {
             if (await isModuleEnabledInChannel(to,"youtube read")) {
                 let likes = 0, title = "", date = "", description = "", account = "", duration = "", v = "", youtubeapirequest = "", views = "", result = "";
                 if (message.match(/v=\w+/)){
-                    v = message.slice(message.match(/v=\w+/).index + 2);
+                    v = message.slice(message.match(/v=.+&?/).index + 2);
                 } else
                 if (message.match(/\.be\/\w+/)) {
-                    v = message.slice(message.match(/\.be\/\w+/).index + 4);
+                    v = message.slice(message.match(/\.be\/.+&?/).index + 4);
                 } else
                 if (message.match(/shorts\/\w+/)) {
                     v = message.slice(message.match(/shorts\/\w+/).index + 7);
@@ -1073,11 +1073,11 @@ bot.on('message', async function(event) {
                 bot.say(from,`The 'youtube search' module is not enabled in ${to}.`);
             }
         } else
-        if (message.match(/twitter\.com\/i\/spaces\/\w+/)) {
+        if (message.match(/twitter\.com\/i\/spaces\/.+&?/)) {
             if (await isModuleEnabledInChannel(to,"twitter expand")) {
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
                     let
-                        id = message.slice(message.search(/\/spaces\/\w+/)+8),
+                        id = message.slice(message.search(/\/spaces\/.+&?/)+8),
                         url = `https://api.twitter.com/2/spaces/${id}`,
                         data = {
                             'space.fields': 'participant_count,started_at,state,title,host_ids',
