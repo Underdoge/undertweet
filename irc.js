@@ -121,7 +121,7 @@ ${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)}${desc ? " · \"" + des
         message = `\
 ${colors.teal(title.toLocaleString('en-us'))} (${hours != "" ? hours + ":" : ""}${minutes + ":" + seconds}) · ${views.toLocaleString('en-us')} views · ${account} \
 · ${new Date(date).toLocaleDateString('en-us', dateOptionsShorter)} ·\
-${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · https://youtu.be/${id} · ${desc ? " · \"" + desc.toLocaleString('en-us') + "\"": ""}`;
+${colors.green(` 👍 ${likes.toLocaleString('en-us')}`)} · https://youtube.com/watch?v=${id} · ${desc ? " · \"" + desc.toLocaleString('en-us') + "\"": ""}`;
     }
     if (message.length > 350)
         message = message.slice(0, 346) + "...\"";
