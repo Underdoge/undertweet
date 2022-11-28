@@ -58,10 +58,6 @@ var
     db = null,
     commands = [];
 
-exports.sayToChannel = function(channel,message) {
-    bot.say(channel,message);
-};
-
 function getDatabase(){
     return db;
 }
@@ -797,6 +793,7 @@ bot.on('invite', function(event) {
 });
 
 bot.on('connected', async function() {
+    console.log("Bot started and connected");
     db = await initDatabase();
     if (process.env.TESTING == "true") {
         config.irc.channels.forEach( channel => {
@@ -817,7 +814,7 @@ bot.on('connected', async function() {
             bot.say("#testing",`Error initializing database...`);
         }
     }
-    //stream.startStream(db);
+    stream.startStream(db,bot);
 });
 
 bot.on('message', async function(event) {

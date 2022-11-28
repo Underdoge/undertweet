@@ -1,8 +1,8 @@
 'use strict';
 
 const
+    IRC = require('irc-framework'),
     needle = require('needle'),
-    irc = require('./irc'),
     colors = require('irc-colors'),
     config = require('./config'),
 	dateOptions = {
@@ -16,7 +16,8 @@ const
     htmlKeys = ['&amp;', '&lt;', '&gt;'],
     rulesURL = config.twitter.rulesURL,
     streamURL = config.twitter.streamURL,
-    token = config.twitter.bearer_token;
+    token = config.twitter.bearer_token,
+    bot = new IRC.Client();
 
 var
     STATUS_CODE = '',
@@ -87,19 +88,19 @@ exports.endStream = function() {
     }
 };
 
-exports.startStream = function(db) {
+exports.startStream = function(db,bot) {
     //Get following rules
     console.log('Starting stream');
     needle.get(rulesURL, { headers: { "authorization": `Bearer ${token}`}}, async function (error, response){
         if (response.statusCode !== 200) {
-            irc.sayToChannel('#testing',`Get All Rules Error Code:${response.statusCode} \n Error:${response.body}`);
+            bot.say('#testing',`Get All Rules Error Code:${response.statusCode} \n Error:${response.body}`);
         } else { 
             let ids = null;
             if (response.body.meta.result_count == 0) {
                 console.log("No rules to delete.");
             } else {
                 console.log("Found some rules to delete");
-                irc.sayToChannel('#testing',`-Old following rules: ${JSON.stringify(response.body.data[0].value)} `);
+                bot.say('#testing',`-Old following rules: ${JSON.stringify(response.body.data[0].value)} `);
                 ids = response.body.data.map(rule => rule.id);
             }
             let data = {
@@ -151,10 +152,10 @@ exports.startStream = function(db) {
                     "add": rules
                 };
                 //Set following rules
-                irc.sayToChannel('#testing',`+New following rules: ${JSON.stringify(data.add[0].value)} `);
+                bot.say('#testing',`+New following rules: ${JSON.stringify(data.add[0].value)} `);
                 needle.post(rulesURL, data, { headers: {"content-type": "application/json","authorization": `Bearer ${token}`}}, function (error,response){
                     if (response.statusCode !== 201) {
-                        irc.sayToChannel('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
+                        bot.say('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
                     } else {
                         console.log(`Following rule set: ${following_rule}`);
                         if (getStream()){
@@ -174,27 +175,27 @@ exports.startStream = function(db) {
                             if (error.code == "ECONNRESET") {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
-                                irc.sayToChannel('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
+                                bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
                                 setTimeout(function() {exports.endStream(); exports.startStream(db)},60*1000);
                             } else {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                                irc.sayToChannel('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
                                 setTimeout(function() {exports.endStream(); exports.startStream(db)},(getLongWait()+2)*60*1000);
                             }
                         })
                         .on('timeout', function() {
                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
-                            irc.sayToChannel('#testing','Connection Timeout.');
+                            bot.say('#testing','Connection Timeout.');
                         })
                         .on('response', function(response) {
                             setLongWait(response.headers["x-rate-limit-reset"]);
                             if (response.statusCode != 200){
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
                                 setTimeout(function() {exports.endStream(); exports.startStream(db)},(getLongWait()+2)*60*1000);
                             } else {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
                                 setWait(60000);
                             }
@@ -202,33 +203,33 @@ exports.startStream = function(db) {
                         })
                         .on('end', function() {
                             if (getStatusCode() == 200) {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                 exports.endStream();
                                 exports.startStream(db);
                             } else
                             if (getStatusCode() == 406) {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
                             } else
                             if (getStatusCode() == 420) {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
                                 setTimeout(function() { exports.startStream(db);},getWait());
                                 setWait(2*getWait());
                             } else 
                             if (getStatusCode() == 429) {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
                                 setTimeout(function() { exports.startStream(db);},(getLongWait()+1)*60*1000);
                             } else
                             if (getStatusCode() == 503) {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
                                 setTimeout(function() { exports.startStream(db);},300000);
                             } else
                             if (getStatusCode() == 500) {
-                                irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
+                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
                                 setTimeout(function() { exports.startStream(db);},getWait());
                                 setWait(2*getWait());
@@ -307,15 +308,15 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)} \
 Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`;
                                                             // check if message too long for IRC
                                                                     if (message.length > 350) {
-                                                                        irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
-                                                                        irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
+                                                                        bot.say(chan[0],`${colors.teal(json.text)}`);
+                                                                        bot.say(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
-                                                                        irc.sayToChannel(chan[0],`Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`);
+                                                                        bot.say(chan[0],`Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`);
                                                                         return;
                                                                     } else {
-                                                                        irc.sayToChannel(chan[0],message);
+                                                                        bot.say(chan[0],message);
                                                                     }
                                                                 } else {
                                                                     message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
@@ -323,14 +324,14 @@ on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`;
                                                                     if (message.length > 350) {
-                                                                        irc.sayToChannel(chan[0],`${colors.teal(json.text)}`);
-                                                                        irc.sayToChannel(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
+                                                                        bot.say(chan[0],`${colors.teal(json.text)}`);
+                                                                        bot.say(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
                                                                 return;
                                                                     } else {
-                                                                        irc.sayToChannel(chan[0],message);
+                                                                        bot.say(chan[0],message);
                                                                     }
                                                                 }
                                                             }                                        
@@ -342,7 +343,7 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
                                     } catch (e) {
                                         console.log(`Error: ${e}`);
                                         console.log(`Chunk: ${JSON.stringify(chunk)}`);
-                                        irc.sayToChannel('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${JSON.stringify(chunk)}`);                                        }
+                                        bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${JSON.stringify(chunk)}`);                                        }
                                     // limit notices
                                     if (tweet && tweet.limit) {
                                         console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
@@ -369,7 +370,7 @@ ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
                     }
                 });
             } else {
-                irc.sayToChannel('#testing',`Not following anyone, no rules defined yet.`);
+                bot.say('#testing',`Not following anyone, no rules defined yet.`);
             }
         }
     });
