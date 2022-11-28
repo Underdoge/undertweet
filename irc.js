@@ -1258,7 +1258,7 @@ bot.on('message', async function(event) {
                             for (let i=0; i < response.body.images.length ; i++){
                                 buffer = Buffer.from(response.body.images[i], "base64");
                                 fs.writeFile(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer, (err) => {
-                                    if (!err) {
+                                    if (!err && i == (response.body.images.length -1)){
                                         try {
                                             // join 9 images into a single 3x3 grid image
                                             joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
@@ -1348,16 +1348,18 @@ bot.on('message', async function(event) {
                                                     for (let i=0; i < response.body.data.length ; i++){
                                                         buffer = Buffer.from(response.body.data[i].b64_json, "base64");
                                                         fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
-                                                            try {
-                                                                // join 3 images into a single row
-                                                                joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
-                                                                    img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
-                                                                        postOpenAIImageVariation(to,from);
+                                                            if (!err && i == (response.body.data.length -1)){
+                                                                try {
+                                                                    // join 3 images into a single row
+                                                                    joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                                                        img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                                            postOpenAIImageVariation(to,from);
+                                                                        });
                                                                     });
-                                                                });
-                                                            } catch (error) {
-                                                                channels[to].openairunning = false;
-                                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                                                } catch (error) {
+                                                                    channels[to].openairunning = false;
+                                                                    bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                                                }
                                                             }
                                                         });
                                                     }
@@ -1472,7 +1474,7 @@ bot.on('message', async function(event) {
                                             for (let i=0; i < response.body.data.length ; i++){
                                                 buffer = Buffer.from(response.body.data[i].b64_json, "base64");
                                                 fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
-                                                    if (!err){
+                                                    if (!err && i == (response.body.data.length -1)){
                                                         try {
                                                             // join 3 images into a single row
                                                             joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
