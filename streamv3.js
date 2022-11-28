@@ -1,7 +1,6 @@
 'use strict';
 
 const
-    IRC = require('irc-framework'),
     needle = require('needle'),
     colors = require('irc-colors'),
     config = require('./config'),
@@ -16,8 +15,7 @@ const
     htmlKeys = ['&amp;', '&lt;', '&gt;'],
     rulesURL = config.twitter.rulesURL,
     streamURL = config.twitter.streamURL,
-    token = config.twitter.bearer_token,
-    bot = new IRC.Client();
+    token = config.twitter.bearer_token;
 
 var
     STATUS_CODE = '',
