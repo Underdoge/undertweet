@@ -1009,8 +1009,12 @@ bot.on('message', async function(event) {
                 if (message.match(/\.be\/.+&?/)) {
                     v = message.slice(message.match(/\.be\/.+&?/).index + 4);
                 } else
-                if (message.match(/shorts\/.+&?/)) {
-                    v = message.slice(message.match(/shorts\/.+&?/).index + 7);
+                if (message.match(/shorts\/.+/)) {
+                    if(message.match(/\?/)){
+                        v = message.slice(message.match(/shorts\/.+/).index + 7,message.match(/\?/).index);
+                    } else {
+                        v = message.slice(message.match(/shorts\/.+/).index + 7);
+                    }
                 }
                 if (v != "") {
                     youtubeapirequest = youtubeVideosURL + "?part=statistics,snippet,contentDetails&id=" + v + "&key=" + youtubeAPIKey;
@@ -1019,7 +1023,7 @@ bot.on('message', async function(event) {
                             bot.say(from,`Error: ${err}`);
                             throw Error(err);
                         }
-                        if (!result.errors && result) {
+                        if (!result.errors && result && result.items[0]) {
                             title = result.items[0].snippet.title;
                             date = result.items[0].snippet.publishedAt;
                             description = result.items[0].snippet.description;
@@ -1054,7 +1058,7 @@ bot.on('message', async function(event) {
                                     bot.say(from,`Error: ${err}`);
                                     throw Error(err);
                                 }
-                                if (!result.errors && result) {
+                                if (!result.errors && result && result.items[0]) {
                                     title = result.items[0].snippet.title;
                                     date = result.items[0].snippet.publishedAt;
                                     description = result.items[0].snippet.description;
