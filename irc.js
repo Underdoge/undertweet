@@ -1423,7 +1423,7 @@ bot.on('message', async function(event) {
                                                 for (let i=0; i < response.body.data.length ; i++){
                                                     buffer = Buffer.from(response.body.data[i].b64_json, "base64");
                                                     fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
-                                                        if(!err) {
+                                                        if (!err && i == (response.body.data.length -1)){
                                                             try {
                                                                 // join 3 images into a single row
                                                                 joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
