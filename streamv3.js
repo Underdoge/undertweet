@@ -174,12 +174,14 @@ exports.startStream = function(db,bot) {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
                                 bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
-                                setTimeout(function() {exports.endStream(); exports.startStream(db,bot)},60*1000);
+                                exports.endStream(); 
+                                setTimeout(function() {exports.startStream(db,bot)},60*1000);
                             } else {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
                                 bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                setTimeout(function() {exports.endStream(); exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
+                                exports.endStream();
+                                setTimeout(function() { exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
                             }
                         })
                         .on('timeout', function() {
@@ -191,7 +193,8 @@ exports.startStream = function(db,bot) {
                             if (response.statusCode != 200){
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                setTimeout(function() {exports.endStream(); exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
+                                exports.endStream();
+                                setTimeout(function() {exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
                             } else {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
@@ -204,7 +207,7 @@ exports.startStream = function(db,bot) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                 exports.endStream();
-                                exports.startStream(db,bot);
+                                setTimeout(function() {exports.startStream(db,bot)},60*1000);
                             } else
                             if (getStatusCode() == 406) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
@@ -213,22 +216,26 @@ exports.startStream = function(db,bot) {
                             if (getStatusCode() == 420) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
+                                exports.endStream();
                                 setTimeout(function() { exports.startStream(db,bot);},getWait());
                                 setWait(2*getWait());
                             } else 
                             if (getStatusCode() == 429) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                exports.endStream();
                                 setTimeout(function() { exports.startStream(db,bot);},(getLongWait()+1)*60*1000);
                             } else
                             if (getStatusCode() == 503) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
+                                exports.endStream();
                                 setTimeout(function() { exports.startStream(db,bot);},300000);
                             } else
                             if (getStatusCode() == 500) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
+                                exports.endStream();
                                 setTimeout(function() { exports.startStream(db,bot);},getWait());
                                 setWait(2*getWait());
                             } 
