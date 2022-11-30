@@ -346,7 +346,7 @@ function setUserOpenaiAPIKey (nick, key) {
             create(nick,key);
             resolve(true);
         } catch (err) {
-            bot.say(nick,err);
+            bot.notice(nick,err);
             resolve(false);
         }
     });
@@ -364,7 +364,7 @@ function deleteUserOpenaiAPIKey (nick) {
                 deletekey(nick);
                 resolve(true);
             } catch (err) {
-                bot.say(nick,err);
+                bot.notice(nick,err);
                 resolve(false);
             }
         } else {
@@ -418,13 +418,13 @@ function modules (event) {
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
-                    bot.say(nick, `Enabled modules in ${to}: ${modules}.`);
+                    bot.notice(nick, `Enabled modules in ${to}: ${modules}.`);
                 } else {
-                    bot.say(nick, `No modules enabled in ${to}.`);
+                    bot.notice(nick, `No modules enabled in ${to}.`);
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.notice(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -451,12 +451,12 @@ function ignore_channel (event) {
                         ignorechannel.run(to);
                     });
                     ignore(to);
-                    bot.say(nick,`Now ignoring '${to}' channel.`);
+                    bot.notice(nick,`Now ignoring '${to}' channel.`);
                 } catch (err) {
-                    bot.say(nick,err);
+                    bot.notice(nick,err);
                 }
             } else {
-                bot.say(nick, 'You must be bot admin to perform that action.');
+                bot.notice(nick, 'You must be bot admin to perform that action.');
             }
         }
     });
@@ -483,12 +483,12 @@ function unignore_channel (event) {
                         ignorechannel.run(to);
                     });
                     ignore(to);
-                    bot.say(nick,`Removed '${to}' channel ignore.`);
+                    bot.notice(nick,`Removed '${to}' channel ignore.`);
                 } catch (err) {
-                    bot.say(nick,err);
+                    bot.notice(nick,err);
                 }
             } else {
-                bot.say(nick, 'You must be bot admin to perform that action.');
+                bot.notice(nick, 'You must be bot admin to perform that action.');
             }
         }
     });
@@ -521,9 +521,9 @@ function enable (event) {
                             newModule.run(to,module);
                         });
                         join(to,module);
-                        bot.say(nick,`Enabled new '${module}' module in ${to}.`);
+                        bot.notice(nick,`Enabled new '${module}' module in ${to}.`);
                     } catch (err) {
-                        bot.say(nick,err);
+                        bot.notice(nick,err);
                     }
                 } else {
                     const modules = db.prepare("select * from modules where t_channel_name = ? and t_module_name = ?").get(to,module);
@@ -534,17 +534,17 @@ function enable (event) {
                                 newModule.run(to,module);
                             });
                             join(to,module);
-                            bot.say(nick,`Enabled '${module}' module in ${to}.`);
+                            bot.notice(nick,`Enabled '${module}' module in ${to}.`);
                         } catch (err) {
-                            bot.say(nick,err);
+                            bot.notice(nick,err);
                         }
                     } else {
-                        bot.say(nick,`Module '${module}' already enabled in ${to}.`);
+                        bot.say(notice,`Module '${module}' already enabled in ${to}.`);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(notice, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -569,7 +569,7 @@ function disable (event) {
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
-                    bot.say(nick,`Module '${module}' not enabled in ${to}.`); 
+                    bot.say(notice,`Module '${module}' not enabled in ${to}.`); 
                         
                 } else {
                     const disableModule = db.prepare("delete from modules where t_channel_name = ? and t_module_name = ?");
@@ -578,14 +578,14 @@ function disable (event) {
                             disableModule.run(channel,module);
                         });
                         disable(to,module);
-                        bot.say(nick,`Disabled '${module}' module in ${to}.`);
+                        bot.say(notice,`Disabled '${module}' module in ${to}.`);
                     } catch (err) {
-                        bot.say(nick,err);
+                        bot.say(notice,err);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.say(notice, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -612,7 +612,7 @@ function follow (event) {
                 // IRC USER HAS OPER OR MORE
                 needle.request('get', twitterUrl, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                     if ( err ) {
-                        bot.say(nick,`Error: ${err}`);
+                        bot.notice(nick,`Error: ${err}`);
                         throw Error(err);
                     }
                     if ( !result.errors && result ) {
@@ -628,9 +628,9 @@ function follow (event) {
                                     newHandle.run(to,screen_name);
                                 });
                                 follow(to,result.screen_name);
-                                bot.say(nick,`Now following ${result.name} in ${to}.`);
+                                bot.notice(nick,`Now following ${result.name} in ${to}.`);
                             } catch (err) {
-                                bot.say(nick,err);
+                                bot.notice(nick,err);
                             }
                         } else {
                             const handles = db.prepare("select * from handles where t_channel_name = ? and t_handle_name = ?").get(to,result.screen_name);
@@ -641,22 +641,22 @@ function follow (event) {
                                         newHandle.run(to,screen_name);
                                     });
                                     follow(to,result.screen_name);
-                                    bot.say(nick,`Now following ${result.name} in ${to}.`);
+                                    bot.notice(nick,`Now following ${result.name} in ${to}.`);
                                     stream.endStream();
                                 } catch (err) {
-                                    bot.say(nick,err);
+                                    bot.notice(nick,err);
                                 }
                             } else {
-                                bot.say(nick,`Already following ${result.name} in ${to}.`);
+                                bot.notice(nick,`Already following ${result.name} in ${to}.`);
                             }
                         }
                     } else {
-                        bot.say(nick,'Tweeter handle not found!.');
+                        bot.notice(nick,'Tweeter handle not found!.');
                     }
                 });
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.notice(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -683,7 +683,7 @@ function unfollow (event) {
                 // IRC USER HAS OPER OR MORE
                 const following = db.prepare("select t_handle_name from handles where t_channel_name = ? and t_handle_name = ?").get(to,handle);
                 if (following == undefined) {
-                    bot.say(nick,`Not following ${handle} in ${to}.`); 
+                    bot.notice(nick,`Not following ${handle} in ${to}.`); 
                 } else {
                     const unfollowHandle = db.prepare("delete from handles where t_channel_name = ? and t_handle_name = ?");
                     try {
@@ -691,15 +691,15 @@ function unfollow (event) {
                             unfollowHandle.run(channel,handle);
                         });
                         unfollow(to,handle);
-                        bot.say(nick,`Unfollowed @${handle} in ${to}.`);
+                        bot.notice(nick,`Unfollowed @${handle} in ${to}.`);
                         stream.endStream();
                     } catch (err) {
-                        bot.say(nick,err);
+                        bot.notice(nick,err);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.notice(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -792,7 +792,7 @@ bot.on('invite', function(event) {
         channels[event.channel] = { openairunning: false };
         bot.join(event.channel);
     } else {
-        bot.say(from,`Channel '${to}' is server side ignored.`);
+        bot.notice(from,`Channel '${to}' is server side ignored.`);
     }
 });
 
@@ -847,7 +847,7 @@ bot.on('message', async function(event) {
                         
                         needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                                 if (err) {
-                                bot.say(from,`Error: ${err}`);
+                                bot.notice(from,`Error: ${err}`);
                                 throw Error(err);
                             }
                             if (result[0]) {
@@ -866,7 +866,7 @@ bot.on('message', async function(event) {
                         });
 
                     } else // No auth data, ask user to authenticate bot
-                        bot.say(from,'No auth data.');
+                        bot.notice(from,'No auth data.');
                 } else
                 // general search
                 if (message.match(/^\.ut\s.+$/)) {
@@ -883,7 +883,7 @@ bot.on('message', async function(event) {
                             };
                         needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                                 if (err) {
-                                bot.say(from,`Error: ${err}`);
+                                bot.notice(from,`Error: ${err}`);
                                 throw Error(err);
                             }
                             if (result.statuses[0]) {
@@ -901,7 +901,7 @@ bot.on('message', async function(event) {
                                 data.result_type='popular';
                                 needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                                     if (err) {
-                                        bot.say(from,`Error: ${err}`);
+                                        bot.notice(from,`Error: ${err}`);
                                         throw Error(err);
                                     }
                                     if (result.statuses[0]) {
@@ -920,11 +920,11 @@ bot.on('message', async function(event) {
                             }
                         });
                     } else // No auth data, ask user to authenticate bot
-                            bot.say(from,'No auth data.');
+                            bot.notice(from,'No auth data.');
                 } else
-                    bot.say(from,'Invalid command.');
+                    bot.notice(from,'Invalid command.');
             } else {
-                bot.say(from,`The 'twitter search' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'twitter search' module is not enabled in ${to}.`);
             }
         } else
         // get twitter.com or t.co link
@@ -947,7 +947,7 @@ bot.on('message', async function(event) {
                                     };
                                 needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                                         if (err) {
-                                        bot.say(from,`Error: ${err}`);
+                                        bot.notice(from,`Error: ${err}`);
                                         throw Error(err);
                                     }
                                     if (!result.errors && result) {
@@ -977,7 +977,7 @@ bot.on('message', async function(event) {
                         
                     needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                             if (err) {
-                            bot.say(from,`Error: ${err}`);
+                            bot.notice(from,`Error: ${err}`);
                             throw Error(err);
                         }
                         if (!result.errors && result) {
@@ -1020,7 +1020,7 @@ bot.on('message', async function(event) {
                     youtubeapirequest = youtubeVideosURL + "?part=statistics,snippet,contentDetails&id=" + v + "&key=" + youtubeAPIKey;
                     needle.get(youtubeapirequest, { headers: { "Accept-Language": "en-US", "Accept": "application/json"}}, function(err, r, result) {
                         if (err) {
-                            bot.say(from,`Error: ${err}`);
+                            bot.notice(from,`Error: ${err}`);
                             throw Error(err);
                         }
                         if (!result.errors && result && result.items[0]) {
@@ -1055,7 +1055,7 @@ bot.on('message', async function(event) {
                             youtubeapirequest = youtubeVideosURL +"?part=statistics,snippet,contentDetails&id=" + id + "&key=" + youtubeAPIKey;
                             needle.get(youtubeapirequest, { headers: { "Accept": "application/json"}}, function(err, r, result) {
                                 if (err) {
-                                    bot.say(from,`Error: ${err}`);
+                                    bot.notice(from,`Error: ${err}`);
                                     throw Error(err);
                                 }
                                 if (!result.errors && result && result.items[0]) {
@@ -1070,12 +1070,12 @@ bot.on('message', async function(event) {
                                 }
                             });
                         } else {
-                            bot.say(from,`No YouTube results for '${query}'`);
+                            bot.notice(from,`No YouTube results for '${query}'`);
                         }
                     });
                 }
             } else {
-                bot.say(from,`The 'youtube search' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'youtube search' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/twitter\.com\/i\/spaces\/.+&?/)) {
@@ -1089,7 +1089,7 @@ bot.on('message', async function(event) {
                         };
                     needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                             if (err) {
-                            bot.say(from,`Error: ${err}`);
+                            bot.notice(from,`Error: ${err}`);
                             throw Error(err);
                         }
                         if (!result.errors && result) {
@@ -1153,7 +1153,7 @@ bot.on('message', async function(event) {
                 commands.push({'nick': from, 'module': module, 'channel': to, 'hostname': hostname});
                 bot.whois(from,enable);
             } else {
-                bot.say(from,`Module '${module}' not found`);
+                bot.notice(from,`Module '${module}' not found`);
             }
         } else
         if ( message.match(/^\.disable\s\w+(\s\w+)*$/)) {
@@ -1165,7 +1165,7 @@ bot.on('message', async function(event) {
                 commands.push({'nick': from, 'module': module, 'channel': to, 'hostname': hostname});
                 bot.whois(from,disable);
             } else {
-                bot.say(from,`Module '${module}'not found`);
+                bot.notice(from,`Module '${module}'not found`);
             }
         }else
         if (message.match(/^\.follow\s@?\w+$/)) {
@@ -1180,9 +1180,9 @@ bot.on('message', async function(event) {
                     commands.push({'nick': from, 'handle': handle, 'channel': to, 'hostname': hostname});
                     bot.whois(from,follow);
                 } else // No auth data, ask user to authenticate bot
-                    bot.say(from,'No auth data.');
+                    bot.notice(from,'No auth data.');
             } else {
-                bot.say(from,`The 'twitter follow' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/^\.unfollow\s@?\w+$/)) {
@@ -1198,9 +1198,9 @@ bot.on('message', async function(event) {
                     commands.push({'nick': from, 'handle': handle, 'channel': to, 'hostname': hostname});
                     bot.whois(from, unfollow);
                 } else // No auth data, ask user to authenticate bot
-                    bot.say(from,'No auth data.');
+                    bot.notice(from,'No auth data.');
             } else {
-                bot.say(from,`The 'twitter follow' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/^\.following$/)) {
@@ -1221,7 +1221,7 @@ bot.on('message', async function(event) {
                             };
                         needle.request('post',url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
                             if (err) {
-                                bot.say(from,`Error: ${err}`);
+                                bot.notice(from,`Error: ${err}`);
                                 throw Error(err);
                             }
                             if (!result.errors && result) {
@@ -1230,18 +1230,18 @@ bot.on('message', async function(event) {
                                     if (index>0)
                                         accounts+=`, ${current.name} (@${current.screen_name})`;
                                 });
-                                bot.say(from,`Following: ${accounts} in ${to}.`);
+                                bot.notice(from,`Following: ${accounts} in ${to}.`);
                             } else {
-                                bot.say(from,`Not following anyone in ${to} yet!.`);
+                                bot.notice(from,`Not following anyone in ${to} yet!.`);
                             }
                         });
                     } else {
-                        bot.say(from,`Not following anyone in ${to} yet!.`); 
+                        bot.notice(from,`Not following anyone in ${to} yet!.`); 
                     }
                 } else // No auth data, ask user to authenticate bot
-                    bot.say(from,'No auth data.');
+                    bot.notice(from,'No auth data.');
             } else {
-                bot.say(from,`The 'twitter follow' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/\.dalle\s.+$/)) {
@@ -1291,7 +1291,7 @@ bot.on('message', async function(event) {
                             }
                         } else {
                             if (response.statusCode == 524){
-                                bot.say(from,`@${from} Dall-E Service is too Busy. Please try again later...`);
+                                bot.notice(from,`@${from} Dall-E Service is too Busy. Please try again later...`);
                             } else {
                                 bot.say(to,`Dall-E Error ${response.statusCode}: ${response.statusMessage}`);
                             }
@@ -1299,10 +1299,10 @@ bot.on('message', async function(event) {
                         }
                     });
                 } else {
-                    bot.say(from,`@${from} please wait for the current Dall-E request to complete.`);
+                    bot.notice(from,`@${from} please wait for the current Dall-E request to complete.`);
                 }
             } else {
-                bot.say(from,`The 'dalle' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'dalle' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/\.openai\s.+$/)) {
@@ -1369,7 +1369,7 @@ bot.on('message', async function(event) {
                                                     }
                                                 } else {
                                                     if (response.statusCode == 524){
-                                                        bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                                        bot.notice(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
                                                     } else
                                                     if (response.statusCode == 401){
                                                         bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
@@ -1382,16 +1382,16 @@ bot.on('message', async function(event) {
                                         }
                                     });
                                 } else {
-                                    bot.say(from,`@${from} Error downloading variation image.`);
+                                    bot.notice(from,`@${from} Error downloading variation image.`);
                                     channels[to].openairunning = false;
                                 }
                             });
                         } else {
-                            bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                            bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
                         }
                     } else 
                         if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/)){
-                            bot.say(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
+                            bot.notice(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
                         } else {
                             //generate image variation by preview image number
                             if (message.match(/\.openai\s[1-3]$/)){
@@ -1440,7 +1440,7 @@ bot.on('message', async function(event) {
                                                 }
                                             } else {
                                                 if (response.statusCode == 524){
-                                                    bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                                    bot.notice(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
                                                 } else
                                                 if (response.statusCode == 401){
                                                     bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
@@ -1451,10 +1451,10 @@ bot.on('message', async function(event) {
                                             }
                                         });
                                     } else {
-                                        bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                        bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
                                     }
                                 } else {
-                                    bot.say(from,`@${from} Selected image no longer exists.`);
+                                    bot.notice(from,`@${from} Selected image no longer exists.`);
                                 }
                             } else {
                                 let prompt = message.slice(message.match(/\.openai\s.+$/).index+8).trim(),
@@ -1495,7 +1495,7 @@ bot.on('message', async function(event) {
                                             }
                                         } else {
                                             if (response.statusCode == 524){
-                                                bot.say(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                                bot.notice(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
                                             } else
                                             if (response.statusCode == 401){
                                                 bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
@@ -1506,30 +1506,30 @@ bot.on('message', async function(event) {
                                         }
                                     });
                                 } else {
-                                    bot.say(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                    bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
                                 }
                             }
                         }
                     } else {
-                        bot.say(from,`You don't have an OpenAI API Key, create an account and get one from https://beta.openai.com/account/api-keys and then do /msg ${config.irc.nick} .setopenaiapikey <yourkey>`);
+                        bot.notice(from,`You don't have an OpenAI API Key, create an account and get one from https://beta.openai.com/account/api-keys and then do /msg ${config.irc.nick} .setopenaiapikey <yourkey>`);
                     }
                 } else {
-                    bot.say(from,`The 'openai' module is not enabled in ${to}.`);
+                    bot.notice(from,`The 'openai' module is not enabled in ${to}.`);
                 }
         } else
         if (message.match(/\.setopenaiapikey\s.+$/)) {
             let key = message.slice(17);
             if (await setUserOpenaiAPIKey(from,key)){
-                bot.say(from,`Saved OpenAI API Key for ${from}.`);
+                bot.notice(from,`Saved OpenAI API Key for ${from}.`);
             } else {
-                bot.say(from,`Error saving OpenAI API Key for ${from}.`);
+                bot.notice(from,`Error saving OpenAI API Key for ${from}.`);
             }
         } else
         if (message.match(/\.delopenaiapikey$/)) {
             if (await deleteUserOpenaiAPIKey(from)){
-                bot.say(from,`Removed OpenAI API Key for ${from}.`);
+                bot.notice(from,`Removed OpenAI API Key for ${from}.`);
             } else {
-                bot.say(from,`No OpenAI API Key found for ${from}.`);
+                bot.notice(from,`No OpenAI API Key found for ${from}.`);
             }
         } else
         if (message.match(/\.imdb\s.+$/)) {
@@ -1623,43 +1623,43 @@ bot.on('message', async function(event) {
                                 }
                             }).get();
                             if (results > 3) {
-                                bot.say(from,`To view all the results visit: ${imdbquery}`);
+                                bot.notice(from,`To view all the results visit: ${imdbquery}`);
                             }
                         }
                     });
                     channels[to].running = false;
                 } else {
-                    bot.say(from,`@${from} please wait for the current IMDb search to complete.`);
+                    bot.notice(from,`@${from} please wait for the current IMDb search to complete.`);
                 }
             } else {
-                bot.say(from,`The 'imdb' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'imdb' module is not enabled in ${to}.`);
             }
         }
         // if message is .help
         if (message.match(/^\.help$/)) {
-            bot.say(from,'Usage:');
-            setTimeout(function() { bot.say(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb', 'youtube read', 'youtube search'.`);},1000);
-            setTimeout(function() { bot.say(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
-            setTimeout(function() { bot.say(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
-            setTimeout(function() { bot.say(from,'.following - show twitter accounts followed in the channel.');},1000);
-            setTimeout(function() { bot.say(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.say(from,'.dalle <prompt> - generate dall-e images from prompt');},1000);
-            setTimeout(function() { bot.say(from,'.openai <prompt> - generate OpenAI Dall-E images from prompt');},1000);
-            setTimeout(function() { bot.say(from,'.openai URL - generate OpenAI Dall-E images from PNG image');},1000);
-            setTimeout(function() { bot.say(from,'.openai <1-3> - generate OpenAI Dall-E image variation from image number.');},1000);
-            setTimeout(function() { bot.say(from,'.setopenaiapikey <api_key> - set OpenAI API Key');},1000);
-            setTimeout(function() { bot.say(from,'.delopenaiapikey - delete OpenAI API Key');},1000);
-            setTimeout(function() { bot.say(from,'.help - this help message.');},1000);
+            bot.notice(from,'Usage:');
+            setTimeout(function() { bot.notice(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.notice(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.notice(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.notice(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb', 'youtube read', 'youtube search'.`);},1000);
+            setTimeout(function() { bot.notice(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
+            setTimeout(function() { bot.notice(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
+            setTimeout(function() { bot.notice(from,'.following - show twitter accounts followed in the channel.');},1000);
+            setTimeout(function() { bot.notice(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.notice(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.notice(from,'.dalle <prompt> - generate dall-e images from prompt');},1000);
+            setTimeout(function() { bot.notice(from,'.openai <prompt> - generate OpenAI Dall-E images from prompt');},1000);
+            setTimeout(function() { bot.notice(from,'.openai URL - generate OpenAI Dall-E images from PNG image');},1000);
+            setTimeout(function() { bot.notice(from,'.openai <1-3> - generate OpenAI Dall-E image variation from image number.');},1000);
+            setTimeout(function() { bot.notice(from,'.setopenaiapikey <api_key> - set OpenAI API Key');},1000);
+            setTimeout(function() { bot.notice(from,'.delopenaiapikey - delete OpenAI API Key');},1000);
+            setTimeout(function() { bot.notice(from,'.help - this help message.');},1000);
         } else
         if (message.match(/^\.bots$/)) {
-            bot.say(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
+            bot.notice(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
         } else
         if (message.match(/^\.source$/)) {
-            bot.say(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
+            bot.notice(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
         }
     }
 });
