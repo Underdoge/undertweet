@@ -160,47 +160,161 @@ ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
 }
 
 function deleteImages(to){
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_0.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_0.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_1.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_1.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_2.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_2.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_3.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_3.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_4.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_4.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_5.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_5.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_6.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_6.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_7.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_7.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dall-e_result_8.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dall-e_result_8.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'row1.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'row1.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'row2.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'row2.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'row3.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'row3.jpg'));
-    if(fs.existsSync(path.join(__dirname,'images',to,'dalle.jpg')))
-        fs.unlinkSync(path.join(__dirname,'images',to,'dalle.jpg'));
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_0.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_0.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_1.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_1.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_2.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_2.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_3.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_3.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_4.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_4.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_5.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_5.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_6.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_6.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_7.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_7.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_8.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_8.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'row1.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'row1.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'row2.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'row2.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'row3.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'row3.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dalle.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dalle.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
 }
 
 function deleteOpenAIImage(to){
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'variation.png')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'variation.png'));
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'variation_resized.png')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'variation_resized.png'));
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_0.png')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'));
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_1.png')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_1.png'));
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle_2.png')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle_2.png'));
-    if(fs.existsSync(path.join(__dirname,'openaiimages',to,'openaidalle.jpg')))
-    fs.unlinkSync(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'));
+    fs.access(path.join(__dirname,'openaiimages',to,'variation.png'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'variation.png'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'openaiimages',to,'variation_resized.png'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'variation_resized.png'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'openaiimages',to,'openaidalle_1.png'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'openaidalle_1.png'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'openaiimages',to,'openaidalle_2.png'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'openaidalle_2.png'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
 }
 
 function postImage(to,from,prompt){
@@ -1255,25 +1369,27 @@ bot.on('message', async function(event) {
                     needle.post(dalleUrl, {prompt: prompt},{json: true}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
-                            if (!fs.existsSync(path.join(__dirname,'images',to))){
-                                fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
-                            }
-                            let buffer = null;
-                            for (let i=0; i < response.body.images.length ; i++){
-                                buffer = Buffer.from(response.body.images[i], "base64");
-                                fs.writeFile(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer, (err) => {
-                                    if (!err && i == (response.body.images.length -1)){
-                                        try {
-                                            // join 9 images into a single 3x3 grid image
-                                            joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
-                                                img.toFile(path.join(__dirname,'images',to,'row1.jpg'),(err,info) =>{
-                                                    joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
-                                                        img.toFile(path.join(__dirname,'images',to,'row2.jpg'),(err,info) => {
-                                                            joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
-                                                                img.toFile(path.join(__dirname,'images',to,'row3.jpg'),(err,info) => {
-                                                                    joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
-                                                                        img.toFile(path.join(__dirname,'images',to,'dalle.jpg'),(err,info) => {
-                                                                            postImage(to,from,prompt);
+                            fs.access(path.join(__dirname,'images',to), (err) => {
+                                if (err){
+                                    fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
+                                }
+                                let buffer = null;
+                                for (let i=0; i < response.body.images.length ; i++){
+                                    buffer = Buffer.from(response.body.images[i], "base64");
+                                    fs.writeFile(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer, (err) => {
+                                        if (!err && i == (response.body.images.length -1)){
+                                            try {
+                                                // join 9 images into a single 3x3 grid image
+                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
+                                                    img.toFile(path.join(__dirname,'images',to,'row1.jpg'),(err,info) =>{
+                                                        joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
+                                                            img.toFile(path.join(__dirname,'images',to,'row2.jpg'),(err,info) => {
+                                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
+                                                                    img.toFile(path.join(__dirname,'images',to,'row3.jpg'),(err,info) => {
+                                                                        joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
+                                                                            img.toFile(path.join(__dirname,'images',to,'dalle.jpg'),(err,info) => {
+                                                                                postImage(to,from,prompt);
+                                                                            });
                                                                         });
                                                                     });
                                                                 });
@@ -1281,14 +1397,14 @@ bot.on('message', async function(event) {
                                                         });
                                                     });
                                                 });
-                                            });
-                                        } catch (error) {
-                                            channels[to].running = false;
-                                            bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                            } catch (error) {
+                                                channels[to].running = false;
+                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                            }
                                         }
-                                    }
-                                });
-                            }
+                                    });
+                                }
+                            });
                         } else {
                             if (response.statusCode == 524){
                                 bot.notice(from,`@${from} Dall-E Service is too Busy. Please try again later...`);
@@ -1308,7 +1424,6 @@ bot.on('message', async function(event) {
         if (message.match(/\.openai\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"openai")) {
                 let openaiAPIKey = await getUserOpenaiAPIKey(from);
-                console.log(`OpenaiAPIKey: ${openaiAPIKey}`);
                 if (openaiAPIKey){
                     if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/)){
                         let url = message.slice(message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)\.png/).index+8).trim();
@@ -1345,9 +1460,80 @@ bot.on('message', async function(event) {
                                             }
                                             needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
                                                 if (!error && response.statusCode == 200){
-                                                    if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
-                                                        fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
+                                                    fs.access(path.join(__dirname,'openaiimages',to), (err) => {
+                                                        if (err){
+                                                            fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
+                                                        }
+                                                        let buffer = null;
+                                                        for (let i=0; i < response.body.data.length ; i++){
+                                                            buffer = Buffer.from(response.body.data[i].b64_json, "base64");
+                                                            fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
+                                                                if (!err && i == (response.body.data.length -1)){
+                                                                    try {
+                                                                        // join 3 images into a single row
+                                                                        joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                                                            img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                                                postOpenAIImageVariation(to,from);
+                                                                            });
+                                                                        });
+                                                                    } catch (error) {
+                                                                        channels[to].openairunning = false;
+                                                                        bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                                                    }
+                                                                }
+                                                            });
+                                                        }
+                                                    });
+                                                } else {
+                                                    if (response.statusCode == 524){
+                                                        bot.notice(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
+                                                    } else
+                                                    if (response.statusCode == 401){
+                                                        bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
+                                                    } else {
+                                                        bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
                                                     }
+                                                    channels[to].openairunning = false;
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    bot.notice(from,`@${from} Error downloading variation image.`);
+                                    channels[to].openairunning = false;
+                                }
+                            });
+                        } else {
+                            bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                        }
+                    } else 
+                        if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/)){
+                            bot.notice(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
+                        } else {
+                            //generate image variation by preview image number
+                            if (message.match(/\.openai\s[1-3]$/)){
+                                let imageNumber = message.match(/[1-3]$/)[0];
+                                fs.access(path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`), (err) => {
+                                    if (!err){
+                                        // check if bot is not handling another call
+                                        if (!channels[to].openairunning){
+                                            channels[to].openairunning = true;
+                                            switch (imageNumber) {
+                                                case "1": bot.say(to,`Generating variations of first image...`); break;
+                                                case "2": bot.say(to,`Generating variations of second image...`); break;
+                                                case "3": bot.say(to,`Generating variations of third image...`); break;
+                                            }
+                                            let data = {
+                                                image: {
+                                                    file: path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`),
+                                                    content_type: "image/png"
+                                                },
+                                                "n": 3,
+                                                "response_format": "b64_json",
+                                                "size": "512x512"
+                                            }
+                                            needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
+                                                if (!error && response.statusCode == 200){
                                                     let buffer = null;
                                                     for (let i=0; i < response.body.data.length ; i++){
                                                         buffer = Buffer.from(response.body.data[i].b64_json, "base64");
@@ -1379,83 +1565,13 @@ bot.on('message', async function(event) {
                                                     channels[to].openairunning = false;
                                                 }
                                             });
+                                        } else {
+                                            bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
                                         }
-                                    });
-                                } else {
-                                    bot.notice(from,`@${from} Error downloading variation image.`);
-                                    channels[to].openairunning = false;
-                                }
-                            });
-                        } else {
-                            bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
-                        }
-                    } else 
-                        if (message.match(/\.openai\shttps?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,5}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)/)){
-                            bot.notice(from,`@${from} Variation image must be a valid PNG file and less than 4MB.`);
-                        } else {
-                            //generate image variation by preview image number
-                            if (message.match(/\.openai\s[1-3]$/)){
-                                let imageNumber = message.match(/[1-3]$/)[0];
-                                if (fs.existsSync(path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`))){
-                                    // check if bot is not handling another call
-                                    if (!channels[to].openairunning){
-                                        channels[to].openairunning = true;
-                                        switch (imageNumber) {
-                                            case "1": bot.say(to,`Generating variations of first image...`); break;
-                                            case "2": bot.say(to,`Generating variations of second image...`); break;
-                                            case "3": bot.say(to,`Generating variations of third image...`); break;
-                                        }
-                                        let data = {
-                                            image: {
-                                                file: path.join(__dirname,'openaiimages',to,`openaidalle_${imageNumber-1}.png`),
-                                                content_type: "image/png"
-                                            },
-                                            "n": 3,
-                                            "response_format": "b64_json",
-                                            "size": "512x512"
-                                        }
-                                        needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
-                                            if (!error && response.statusCode == 200){
-                                                if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
-                                                    fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
-                                                }
-                                                let buffer = null;
-                                                for (let i=0; i < response.body.data.length ; i++){
-                                                    buffer = Buffer.from(response.body.data[i].b64_json, "base64");
-                                                    fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
-                                                        if (!err && i == (response.body.data.length -1)){
-                                                            try {
-                                                                // join 3 images into a single row
-                                                                joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
-                                                                    img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
-                                                                        postOpenAIImageVariation(to,from);
-                                                                    });
-                                                                });
-                                                            } catch (error) {
-                                                                channels[to].openairunning = false;
-                                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
-                                                            }
-                                                        }
-                                                    });
-                                                }
-                                            } else {
-                                                if (response.statusCode == 524){
-                                                    bot.notice(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
-                                                } else
-                                                if (response.statusCode == 401){
-                                                    bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
-                                                } else {
-                                                    bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
-                                                }
-                                                channels[to].openairunning = false;
-                                            }
-                                        });
                                     } else {
-                                        bot.notice(from,`@${from} please wait for the current OpenAI Dall-E request to complete.`);
+                                        bot.notice(from,`@${from} Selected image no longer exists.`);
                                     }
-                                } else {
-                                    bot.notice(from,`@${from} Selected image no longer exists.`);
-                                }
+                                });
                             } else {
                                 let prompt = message.slice(message.match(/\.openai\s.+$/).index+8).trim(),
                                     data = {
@@ -1471,28 +1587,30 @@ bot.on('message', async function(event) {
                                     deleteOpenAIImage(to);
                                     needle.post(openAIAPIGenerationsUrl, data, {headers: {"Content-Type": "application/json","Authorization": `Bearer ${openaiAPIKey}`}},function (error,response){
                                         if (!error && response.statusCode == 200){
-                                            if (!fs.existsSync(path.join(__dirname,'openaiimages',to))){
-                                                fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
-                                            }
-                                            let buffer = null;
-                                            for (let i=0; i < response.body.data.length ; i++){
-                                                buffer = Buffer.from(response.body.data[i].b64_json, "base64");
-                                                fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
-                                                    if (!err && i == (response.body.data.length -1)){
-                                                        try {
-                                                            // join 3 images into a single row
-                                                            joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
-                                                                img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
-                                                                    postOpenAIImage(to,from,prompt);
+                                            fs.access(path.join(__dirname,'openaiimages',to), (err) => {
+                                                if (err){
+                                                    fs.mkdirSync(path.join(__dirname,'openaiimages',to), { recursive: true });
+                                                }
+                                                let buffer = null;
+                                                for (let i=0; i < response.body.data.length ; i++){
+                                                    buffer = Buffer.from(response.body.data[i].b64_json, "base64");
+                                                    fs.writeFile(path.join(__dirname,'openaiimages',to,`openaidalle_${i}.png`), buffer, "base64", (err) => {
+                                                        if (!err && i == (response.body.data.length -1)){
+                                                            try {
+                                                                // join 3 images into a single row
+                                                                joinImages.joinImages([path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), path.join(__dirname,'openaiimages',to,'openaidalle_1.png'),path.join(__dirname,'openaiimages',to,'openaidalle_2.png')],options_horizontal).then((img) => {
+                                                                    img.toFile(path.join(__dirname,'openaiimages',to,'openaidalle.jpg'),(err,info) =>{
+                                                                        postOpenAIImage(to,from,prompt);
+                                                                    });
                                                                 });
-                                                            });
-                                                        } catch (error) {
-                                                            channels[to].openairunning = false;
-                                                            bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                                            } catch (error) {
+                                                                channels[to].openairunning = false;
+                                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                                            }
                                                         }
-                                                    }
-                                                });
-                                            }
+                                                    });
+                                                }
+                                            });
                                         } else {
                                             if (response.statusCode == 524){
                                                 bot.notice(from,`@${from} OpenAI Dall-E Service is too Busy. Please try again later...`);
