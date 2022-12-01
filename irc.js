@@ -896,7 +896,6 @@ bot.on('invite', function(event) {
         isIgnored = true;
     console.log(`Channel: ${to}`);
     const ignored = db.prepare("select ignore from channels where t_channel_name = ?").get(to);
-    console.log(`Ignored: ${ignored.ignore}`);
     if ( ignored == undefined || ignored.ignore == 0) {
         isIgnored = false;
     }
