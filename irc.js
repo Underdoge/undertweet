@@ -487,6 +487,23 @@ function deleteUserOpenaiAPIKey (nick) {
     });
 }
 
+function getIgnoredChannels () {
+    return new Promise(resolve => {
+        let db = getDatabase();
+        let channels = db.prepare("select t_channel_name from channels where ignore = 1");
+        let ignoredChannels = [];
+        if (channels != undefined) {
+            for (const channel of channels.iterate()){
+                ignoredChannels.push(channel.t_channel_name);
+            }
+        }
+        if (ignoredChannels.length > 0)
+            resolve(ignoredChannels);
+        else
+            resolve(null);
+    });
+}
+
 function getEnabledModulesInChannel (channel) {
     return new Promise(resolve => {
         let db = getDatabase();
@@ -600,6 +617,31 @@ function unignore_channel (event) {
                     bot.notice(nick,`Removed '${to}' channel ignore.`);
                 } catch (err) {
                     bot.notice(nick,err);
+                }
+            } else {
+                bot.notice(nick, 'You must be bot admin to perform that action.');
+            }
+        }
+    });
+    commands.splice(removeIndex,1);
+}
+
+function ignoring (event) {
+    let
+    removeIndex = null,
+    nick = null,
+    hostname = null;
+    commands.forEach (async function ( command, index ) {
+        if ( command.nick == event.nick ) {
+            nick = event.nick,
+            hostname = command.hostname;
+            removeIndex = index;
+            if (config.irc.adminHostnames.indexOf(hostname) != -1 ) {
+                let channels = await getIgnoredChannels();
+                if (channels && channels.length > 0){
+                    bot.notice(nick, `Ingored channels: ${channels}.`);
+                } else {
+                    bot.notice(nick, `No ignored channels.`);
                 }
             } else {
                 bot.notice(nick, 'You must be bot admin to perform that action.');
@@ -1256,6 +1298,13 @@ bot.on('message', async function(event) {
                 channel = message.match(/#.+/);
                 commands.push({'nick': from, 'channel': channel, 'hostname': hostname});
                 bot.whois(from,unignore_channel);
+            }
+        } else
+        if ( message.match(/^\.ignoring$/)) {            
+            let channel = null;
+            if (message.match(/^\.ignoring$/)) {
+                commands.push({'nick': from, 'hostname': hostname });
+                bot.whois(from,ignoring);
             }
         } else
         if ( message.match(/^\.enable\s\w+(\s\w+)*$/)) {            
