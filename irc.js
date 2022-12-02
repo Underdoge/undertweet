@@ -538,15 +538,15 @@ function modules (event) {
     let
         nick = null,
         removeIndex = null,
-        host = null,
+        hostname = null,
         to = null;
     commands.forEach ( async function ( command, index ) {
         if ( command.nick == event.nick ) {
             nick = event.nick;
             to = command.channel;
-            host = command.host;
+            hostname = command.hostname;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
                     bot.notice(nick, `Enabled modules in ${to}: ${modules}.`);
@@ -657,7 +657,7 @@ function enable (event) {
         removeIndex = null,
         module = null,
         to = null,
-        host = null,
+        hostname = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
@@ -713,7 +713,7 @@ function disable (event) {
         removeIndex = null,
         module = null,
         to = null,
-        host = null,
+        hostname = null,
         db = getDatabase();
     commands.forEach ( function ( command, index ) {
         if ( command.nick == event.nick ) {
@@ -721,6 +721,7 @@ function disable (event) {
             module = command.module;
             to = command.channel;
             hostname = command.hostname;
+            console.log(`Hostname: ${hostname}`);
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
