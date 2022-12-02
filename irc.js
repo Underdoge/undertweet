@@ -695,12 +695,12 @@ function enable (event) {
                             bot.notice(nick,err);
                         }
                     } else {
-                        bot.say(notice,`Module '${module}' already enabled in ${to}.`);
+                        bot.notice(nick,`Module '${module}' already enabled in ${to}.`);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(notice, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.notice(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
@@ -725,7 +725,7 @@ function disable (event) {
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
-                    bot.say(notice,`Module '${module}' not enabled in ${to}.`); 
+                    bot.notice(nick,`Module '${module}' not enabled in ${to}.`); 
                         
                 } else {
                     const disableModule = db.prepare("delete from modules where t_channel_name = ? and t_module_name = ?");
@@ -734,14 +734,14 @@ function disable (event) {
                             disableModule.run(channel,module);
                         });
                         disable(to,module);
-                        bot.say(notice,`Disabled '${module}' module in ${to}.`);
+                        bot.notice(nick,`Disabled '${module}' module in ${to}.`);
                     } catch (err) {
-                        bot.say(notice,err);
+                        bot.notice(nick,err);
                     }
                 }
             } else {
                 // IRC USER DOESN'T HAVE OPER OR MORE
-                bot.say(notice, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
+                bot.notice(nick, 'You must be OWNER (~) or bot admin to perform that action in this channel.');
             }
         }
     });
