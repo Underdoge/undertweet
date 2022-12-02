@@ -664,9 +664,9 @@ function enable (event) {
             nick = event.nick,
             module = command.module;
             to = command.channel;
-            host = command.host,
+            hostname = command.hostname,
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
                 const joinedchannels = db.prepare("select * from channels where t_channel_name = ?").get(to);
                 if (joinedchannels == undefined) {
                     const newChannel = db.prepare("insert into channels (t_channel_name) values (?)");
@@ -720,9 +720,9 @@ function disable (event) {
             nick = event.nick,
             module = command.module;
             to = command.channel;
-            host = command.host;
+            hostname = command.hostname;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(host) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
                 const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
                     bot.notice(nick,`Module '${module}' not enabled in ${to}.`); 
