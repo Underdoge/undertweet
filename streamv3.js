@@ -162,7 +162,7 @@ exports.startStream = function(db,bot) {
                             getStream().removeAllListeners();
                             getStream().destroy();
                         }
-                        setTimeout( () => {
+                        setTimeout(() => {
                             stream = needle.get(streamURL, {
                                 headers: {
                                     "User-Agent": "v2FilterStreamJS",
@@ -170,210 +170,210 @@ exports.startStream = function(db,bot) {
                                 },
                                 timeout: 20000
                             });
-                        },10000);
-                        stream.on('error', function (error) {
-                            if (error.code == "ECONNRESET") {
+                            stream.on('error', function (error) {
+                                if (error.code == "ECONNRESET") {
+                                    setLongWait(response.headers["x-rate-limit-reset"]);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
+                                    bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
+                                    exports.endStream(); 
+                                    setTimeout(function() {exports.startStream(db,bot)},60*1000);
+                                } else {
+                                    setLongWait(response.headers["x-rate-limit-reset"]);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                    bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                    exports.endStream();
+                                    setTimeout(function() { exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
+                                }
+                            })
+                            .on('timeout', function() {
+                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
+                                bot.say('#testing','Connection Timeout.');
+                            })
+                            .on('response', function(response) {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
-                                bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
-                                exports.endStream(); 
-                                setTimeout(function() {exports.startStream(db,bot)},60*1000);
-                            } else {
-                                setLongWait(response.headers["x-rate-limit-reset"]);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                                bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                exports.endStream();
-                                setTimeout(function() { exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
-                            }
-                        })
-                        .on('timeout', function() {
-                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection Timeout.`);
-                            bot.say('#testing','Connection Timeout.');
-                        })
-                        .on('response', function(response) {
-                            setLongWait(response.headers["x-rate-limit-reset"]);
-                            if (response.statusCode != 200){
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
-                                exports.endStream();
-                                setTimeout(function() {exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
-                            } else {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
-                                setWait(60000);
-                            }
-                            setStatusCode(response.statusCode);
-                        })
-                        .on('end', function() {
-                            if (getStatusCode() == 200) {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
-                                exports.endStream();
-                                setTimeout(function() {exports.startStream(db,bot)},5*1000);
-                            } else
-                            if (getStatusCode() == 406) {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
-                            } else
-                            if (getStatusCode() == 420) {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
-                                exports.endStream();
-                                setTimeout(function() { exports.startStream(db,bot);},getWait());
-                                setWait(2*getWait());
-                            } else 
-                            if (getStatusCode() == 429) {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
-                                exports.endStream();
-                                setTimeout(function() { exports.startStream(db,bot);},(getLongWait()+1)*60*1000);
-                            } else
-                            if (getStatusCode() == 503) {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
-                                exports.endStream();
-                                setTimeout(function() { exports.startStream(db,bot);},300000);
-                            } else
-                            if (getStatusCode() == 500) {
-                                bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
-                                console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
-                                exports.endStream();
-                                setTimeout(function() { exports.startStream(db,bot);},getWait());
-                                setWait(2*getWait());
-                            } 
-    
-                        })
-                        .on('readable', function() {
-                            let chunk = null;
-                            if (chunk = this.read()) {
-                                if (chunk != "\r\n") {
-                                    let tweet = null;
-                                    try {
-                                        tweet = JSON.parse(chunk);
-                                        if (tweet && tweet.data) {
-                                            let
-                                                id = tweet.data.id,
-                                                url = 'https://api.twitter.com/1.1/statuses/show.json',
-                                                query = {
-                                                    id,
-                                                    'tweet_mode': 'extended',
-                                                };
-                                            needle.request('get', url, query, { headers: { "authorization": `Bearer ${token}`}}, function(err, response, json) {
-                                                if (err) {
-                                                    bot.say(to,`Error: ${err}`);
-                                                    throw Error(err);
-                                                }
-                                                if (!json.errors && json) {        
-                                                    channels.forEach(function (chan) {
-                                                        try{
-                                                            screen_names = chan[1].toString().split(',');
-                                                        } catch (e) {
-                                                            console.log(`Channel: ${chan}`);
-                                                            console.log(`Error: ${e}`);
-                                                            screen_names = [];
-                                                        }
-                                                        screen_names.forEach(function (screen_name) {
-                                                            //need to make call to make call to get tweet and insert in json variable
-                                                            if (screen_name == json.user.screen_name) {
-                                                                if (json.retweeted_status) {
-                                                                    if (json.retweeted_status.truncated){
-                                                                        json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.extended_tweet.full_text}`;
-                                                                    } else {
-                                                                        json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.text}`;
-                                                                    }
-                                                                    json.favorite_count = json.retweeted_status.favorite_count;
-                                                                    json.retweet_count = json.retweeted_status.retweet_count;
-                                                                    
-                                                                }
-                                                                if (json.truncated){
-                                                                    json.text = json.extended_tweet.full_text.replace(/\n/g,' ');    
-                                                                } else {
-                                                                    json.text = json.full_text.replace(/\n/g,' ');
-                                                                }
-                                                                htmlKeys.forEach( curr => {
-                                                                    json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
-                                                                });
-                                                                if (json.quoted_status) {
-                                                                    if (json.quoted_status.truncated){
-                                                                        json.quoted_status.text = json.quoted_status.extended_tweet.full_text.replace(/\n/g,' ');    
-                                                                    } else {
-                                                                        if (json.quoted_status.text)
-                                                                            json.quoted_status.text = json.quoted_status.text.replace(/\n/g,' ');
-                                                                        else{
-                                                                            console.log("Empty quoted status text");
-                                                                            json.quoted_status.text = "Empty quoted status text";
+                                if (response.statusCode != 200){
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error in response, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in ${getLongWait()} minutes.`);
+                                    exports.endStream();
+                                    setTimeout(function() {exports.startStream(db,bot)},(getLongWait()+2)*60*1000);
+                                } else {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream started. Response OK, status code: ${response.statusCode}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
+                                    setWait(60000);
+                                }
+                                setStatusCode(response.statusCode);
+                            })
+                            .on('end', function() {
+                                if (getStatusCode() == 200) {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
+                                    exports.endStream();
+                                    setTimeout(function() {exports.startStream(db,bot)},5*1000);
+                                } else
+                                if (getStatusCode() == 406) {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
+                                } else
+                                if (getStatusCode() == 420) {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] The client has connected too frequently or is reconnecting too fast. Retrying in ${getWait()/1000} seconds.`);
+                                    exports.endStream();
+                                    setTimeout(function() { exports.startStream(db,bot);},getWait());
+                                    setWait(2*getWait());
+                                } else 
+                                if (getStatusCode() == 429) {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] We are being rate limited. Retrying in ${ getLongWait()+1 } minutes.`);
+                                    exports.endStream();
+                                    setTimeout(function() { exports.startStream(db,bot);},(getLongWait()+1)*60*1000);
+                                } else
+                                if (getStatusCode() == 503) {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Service Unavailable. A streaming server is temporarily overloaded. Retrying in 5 minutes`);
+                                    exports.endStream();
+                                    setTimeout(function() { exports.startStream(db,bot);},300000);
+                                } else
+                                if (getStatusCode() == 500) {
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Server Error 500. Retrying in ${getWait()/1000} seconds.`);
+                                    exports.endStream();
+                                    setTimeout(function() { exports.startStream(db,bot);},getWait());
+                                    setWait(2*getWait());
+                                } 
+        
+                            })
+                            .on('readable', function() {
+                                let chunk = null;
+                                if (chunk = this.read()) {
+                                    if (chunk != "\r\n") {
+                                        let tweet = null;
+                                        try {
+                                            tweet = JSON.parse(chunk);
+                                            if (tweet && tweet.data) {
+                                                let
+                                                    id = tweet.data.id,
+                                                    url = 'https://api.twitter.com/1.1/statuses/show.json',
+                                                    query = {
+                                                        id,
+                                                        'tweet_mode': 'extended',
+                                                    };
+                                                needle.request('get', url, query, { headers: { "authorization": `Bearer ${token}`}}, function(err, response, json) {
+                                                    if (err) {
+                                                        bot.say(to,`Error: ${err}`);
+                                                        throw Error(err);
+                                                    }
+                                                    if (!json.errors && json) {        
+                                                        channels.forEach(function (chan) {
+                                                            try{
+                                                                screen_names = chan[1].toString().split(',');
+                                                            } catch (e) {
+                                                                console.log(`Channel: ${chan}`);
+                                                                console.log(`Error: ${e}`);
+                                                                screen_names = [];
+                                                            }
+                                                            screen_names.forEach(function (screen_name) {
+                                                                //need to make call to make call to get tweet and insert in json variable
+                                                                if (screen_name == json.user.screen_name) {
+                                                                    if (json.retweeted_status) {
+                                                                        if (json.retweeted_status.truncated){
+                                                                            json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.extended_tweet.full_text}`;
+                                                                        } else {
+                                                                            json.text = `RT @${json.retweeted_status.user.screen_name}: ${json.retweeted_status.text}`;
                                                                         }
+                                                                        json.favorite_count = json.retweeted_status.favorite_count;
+                                                                        json.retweet_count = json.retweeted_status.retweet_count;
+                                                                        
                                                                     }
-                                                                    json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                                                                    if (json.truncated){
+                                                                        json.text = json.extended_tweet.full_text.replace(/\n/g,' ');    
+                                                                    } else {
+                                                                        json.text = json.full_text.replace(/\n/g,' ');
+                                                                    }
                                                                     htmlKeys.forEach( curr => {
-                                                                        json.quoted_status.text = json.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                                                        json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
                                                                     });
-                                                                    message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
+                                                                    if (json.quoted_status) {
+                                                                        if (json.quoted_status.truncated){
+                                                                            json.quoted_status.text = json.quoted_status.extended_tweet.full_text.replace(/\n/g,' ');    
+                                                                        } else {
+                                                                            if (json.quoted_status.text)
+                                                                                json.quoted_status.text = json.quoted_status.text.replace(/\n/g,' ');
+                                                                            else{
+                                                                                console.log("Empty quoted status text");
+                                                                                json.quoted_status.text = "Empty quoted status text";
+                                                                            }
+                                                                        }
+                                                                        json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                                                                        htmlKeys.forEach( curr => {
+                                                                            json.quoted_status.text = json.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                                                        });
+                                                                        message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)} \
 Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`;
-                                                            // check if message too long for IRC
-                                                                    if (message.length > 350) {
-                                                                        bot.say(chan[0],`${colors.teal(json.text)}`);
-                                                                        bot.say(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
+                                                                // check if message too long for IRC
+                                                                        if (message.length > 350) {
+                                                                            bot.say(chan[0],`${colors.teal(json.text)}`);
+                                                                            bot.say(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
-                                                                        bot.say(chan[0],`Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`);
-                                                                        return;
+                                                                            bot.say(chan[0],`Quoting @${json.quoted_status.user.screen_name}: ${colors.teal(json.quoted_status.text)}`);
+                                                                            return;
+                                                                        } else {
+                                                                            bot.say(chan[0],message);
+                                                                        }
                                                                     } else {
-                                                                        bot.say(chan[0],message);
-                                                                    }
-                                                                } else {
-                                                                    message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
+                                                                        message = `${colors.teal(json.text)} · by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`;
-                                                                    if (message.length > 350) {
-                                                                        bot.say(chan[0],`${colors.teal(json.text)}`);
-                                                                        bot.say(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
+                                                                        if (message.length > 350) {
+                                                                            bot.say(chan[0],`${colors.teal(json.text)}`);
+                                                                            bot.say(chan[0],`by ${json.user.name} (@${json.user.screen_name}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.favorite_count.toLocaleString('en-us')}`)}`);
-                                                                return;
-                                                                    } else {
-                                                                        bot.say(chan[0],message);
+                                                                    return;
+                                                                        } else {
+                                                                            bot.say(chan[0],message);
+                                                                        }
                                                                     }
-                                                                }
-                                                            }                                        
+                                                                }                                        
+                                                            });
                                                         });
-                                                    });
-                                                }
-                                            });
+                                                    }
+                                                });
+                                            }
+                                        } catch (e) {
+                                            console.log(`Error: ${e}`);
+                                            console.log(`Chunk: ${JSON.stringify(chunk)}`);
+                                            bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${JSON.stringify(chunk)}`);                                        }
+                                        // limit notices
+                                        if (tweet && tweet.limit) {
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
                                         }
-                                    } catch (e) {
-                                        console.log(`Error: ${e}`);
-                                        console.log(`Chunk: ${JSON.stringify(chunk)}`);
-                                        bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${JSON.stringify(chunk)}`);                                        }
-                                    // limit notices
-                                    if (tweet && tweet.limit) {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
-                                    }
-                                    // Withheld content notices
-                                    if (tweet && tweet.status_withheld) {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Withheld content notice: ${JSON.stringify(tweet.status_withheld,null,'    ')}`);
-                                    }
-                                    if (tweet && tweet.user_withheld) {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] User withheld notice: ${JSON.stringify(tweet.user_withheld,null,'    ')}`);
-                                    }
-                                    // Disconnect message
-                                    if (tweet && tweet.disconnect) {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Disconnect notice: ${JSON.stringify(tweet.disconnect,null,'    ')}`);
-                                    }
-                                    // Stall warning
-                                    if (tweet && tweet.warning) {
-                                        console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stall warning: ${JSON.stringify(tweet.warning,null,'    ')}`);
+                                        // Withheld content notices
+                                        if (tweet && tweet.status_withheld) {
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Withheld content notice: ${JSON.stringify(tweet.status_withheld,null,'    ')}`);
+                                        }
+                                        if (tweet && tweet.user_withheld) {
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] User withheld notice: ${JSON.stringify(tweet.user_withheld,null,'    ')}`);
+                                        }
+                                        // Disconnect message
+                                        if (tweet && tweet.disconnect) {
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Disconnect notice: ${JSON.stringify(tweet.disconnect,null,'    ')}`);
+                                        }
+                                        // Stall warning
+                                        if (tweet && tweet.warning) {
+                                            console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stall warning: ${JSON.stringify(tweet.warning,null,'    ')}`);
+                                        }
                                     }
                                 }
-                            }
-                        });
-                        setStream(stream);
+                            });
+                            setStream(stream);
+                        },10000);
                     }
                 });
             } else {
