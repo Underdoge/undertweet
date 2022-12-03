@@ -155,13 +155,14 @@ exports.startStream = function(db,bot) {
                     if (response.statusCode !== 201) {
                         bot.say('#testing',`Set Rules Error Code:${response.statusCode} \n Error:${response.body}`);
                     } else {
+                        let stream = null;
                         console.log(`Following rule set: ${following_rule}`);
                         if (getStream()){
                             getStream().abort();
                             getStream().removeAllListeners();
                             getStream().destroy();
                         }
-                        let      
+                        setTimeout( () => {
                             stream = needle.get(streamURL, {
                                 headers: {
                                     "User-Agent": "v2FilterStreamJS",
@@ -169,6 +170,7 @@ exports.startStream = function(db,bot) {
                                 },
                                 timeout: 20000
                             });
+                        },10000);
                         stream.on('error', function (error) {
                             if (error.code == "ECONNRESET") {
                                 setLongWait(response.headers["x-rate-limit-reset"]);
@@ -207,7 +209,7 @@ exports.startStream = function(db,bot) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Connection ended, restarting.`);
                                 exports.endStream();
-                                setTimeout(function() {exports.startStream(db,bot)},60*1000);
+                                setTimeout(function() {exports.startStream(db,bot)},5*1000);
                             } else
                             if (getStatusCode() == 406) {
                                 bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Not following any accounts yet.`);
