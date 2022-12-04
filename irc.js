@@ -849,7 +849,11 @@ function unfollow (event) {
                         });
                         unfollow(to,handle);
                         bot.notice(nick,`Unfollowed @${handle} in ${to}.`);
-                        stream.endStream();
+                        const remaining = db.prepare("select * from handles where t_handle_name = ?").get(handle);
+                        if (remaining != undefined)
+                            stream.updateChannels(db);
+                        else
+                            stream.endStream();
                     } catch (err) {
                         bot.notice(nick,err);
                     }

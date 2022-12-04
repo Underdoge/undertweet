@@ -86,6 +86,31 @@ exports.endStream = function() {
     }
 };
 
+exports.updateChannels = function(db) {
+    const allChannels = db.prepare("select * from channels");
+    const arrayChannels = [];
+    for (const channel of allChannels.iterate()){
+        arrayChannels.push(channel.t_channel_name);
+    }
+    let following_nicks = [];
+    channels = [];
+    arrayChannels.forEach( (channel,index) => {
+        channels.push([channel]);
+        const following = db.prepare("select * from handles where t_channel_name = ?");
+        let following_handles = [];
+        for (const handle of following.iterate(channel)){
+            following_handles.push(handle.t_handle_name);
+        }
+        channels[index].push(following_handles);
+        if (following_handles.length > 0){
+            following_handles.forEach(function (nick) {
+                if (following_nicks.indexOf(nick) === -1)
+                    following_nicks.push(nick);
+            });
+        }
+    });
+}
+
 exports.startStream = function(db,bot) {
     //Get following rules
     console.log('Starting stream');
