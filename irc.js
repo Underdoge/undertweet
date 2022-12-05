@@ -440,7 +440,7 @@ async function postOpenAIImageVariation(to,from){
 function getUserOpenaiAPIKey (nick) {
     return new Promise( resolve => {
         const db = getDatabase();
-        const api_key = db.prepare("select t_key from openai_apikeys where t_nick = ?").get(nick);
+        const api_key = db.prepare("select t_key from openai_apikeys where t_nick = ? COLLATE NOCASE").get(nick);
         if (api_key != undefined && api_key != "") {
             resolve(api_key.t_key);
         } else {
@@ -468,7 +468,7 @@ function setUserOpenaiAPIKey (nick, key) {
 function deleteUserOpenaiAPIKey (nick) {
     return new Promise ( resolve => {
         const db = getDatabase();
-        const APIKey = db.prepare("select t_key from openai_apikeys where t_nick = ?").get(nick);
+        const APIKey = db.prepare("select t_key from openai_apikeys where t_nick = ? COLLATE NOCASE").get(nick);
         if (APIKey != undefined && APIKey != "") {
             const deleteAPIKey = db.prepare("delete from openai_apikeys where t_nick = ?");
             try {
@@ -490,7 +490,7 @@ function deleteUserOpenaiAPIKey (nick) {
 function getIgnoredChannels () {
     return new Promise(resolve => {
         let db = getDatabase();
-        let channels = db.prepare("select t_channel_name from channels where ignore = 1");
+        let channels = db.prepare("select t_channel_name from channels where ignore = 1 COLLATE NOCASE");
         let ignoredChannels = [];
         if (channels != undefined) {
             for (const channel of channels.iterate()){
@@ -507,7 +507,7 @@ function getIgnoredChannels () {
 function getEnabledModulesInChannel (channel) {
     return new Promise(resolve => {
         let db = getDatabase();
-        let modules = db.prepare("select t_module_name from modules where t_channel_name = ?");
+        let modules = db.prepare("select t_module_name from modules where t_channel_name = ? COLLATE NOCASE");
         let arrayModules = [];
         for (const module of modules.iterate(channel)){
             arrayModules.push(module.t_module_name);
@@ -522,7 +522,7 @@ function getEnabledModulesInChannel (channel) {
 function isModuleEnabledInChannel (channel, module) {
     return new Promise(resolve => {
         let db = getDatabase();
-        const modules = db.prepare("select t_module_name from modules where t_channel_name = ?");
+        const modules = db.prepare("select t_module_name from modules where t_channel_name = ? COLLATE NOCASE");
         let arrayModules = [];
         for (const module of modules.iterate(channel)){
             arrayModules.push(module.t_module_name);
@@ -667,7 +667,7 @@ function enable (event) {
             hostname = command.hostname,
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
-                const joinedchannels = db.prepare("select * from channels where t_channel_name = ?").get(to);
+                const joinedchannels = db.prepare("select * from channels where t_channel_name = ? COLLATE NOCASE").get(to);
                 if (joinedchannels == undefined) {
                     const newChannel = db.prepare("insert into channels (t_channel_name) values (?)");
                     const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
@@ -682,7 +682,7 @@ function enable (event) {
                         bot.notice(nick,err);
                     }
                 } else {
-                    const modules = db.prepare("select * from modules where t_channel_name = ? and t_module_name = ?").get(to,module);
+                    const modules = db.prepare("select * from modules where t_channel_name = ? and t_module_name = ? COLLATE NOCASE").get(to,module);
                     if (modules == undefined) {
                         const newModule = db.prepare("insert into modules (t_channel_name, t_module_name) values (?, ?)");
                         try {
@@ -724,7 +724,7 @@ function disable (event) {
             console.log(`Hostname: ${hostname}`);
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
-                const modules = db.prepare("select * from modules where t_channel_name = ?").all(to);
+                const modules = db.prepare("select * from modules where t_channel_name = ? COLLATE NOCASE").all(to);
                 if (modules == undefined && modules.indexOf(module) == -1) {
                     bot.notice(nick,`Module '${module}' not enabled in ${to}.`); 
                         
@@ -775,7 +775,7 @@ function follow (event) {
                     if ( !result.errors && result ) {
                         // add twitter ID
                         // see if it doesn't exist already
-                        const joinedchannels = db.prepare("select * from channels where t_channel_name = ?").get(to);
+                        const joinedchannels = db.prepare("select * from channels where t_channel_name = ? COLLATE NOCASE").get(to);
                         if (joinedchannels == undefined) {
                             const newChannel = db.prepare("insert into channels (t_channel_name) values (?)");
                             const newHandle = db.prepare("insert into handles (t_channel_name, t_module_name) values (?, ?)");
@@ -790,7 +790,7 @@ function follow (event) {
                                 bot.notice(nick,err);
                             }
                         } else {
-                            const handles = db.prepare("select * from handles where t_channel_name = ? and t_handle_name = ?").get(to,result.screen_name);
+                            const handles = db.prepare("select * from handles where t_channel_name = ? and t_handle_name = ? COLLATE NOCASE").get(to,result.screen_name);
                             if (handles == undefined) {
                                 const newHandle = db.prepare("insert into handles (t_channel_name, t_handle_name) values (?, ?)");
                                 try {
@@ -838,7 +838,7 @@ function unfollow (event) {
             let data = { "screen_name" : handle };
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
                 // IRC USER HAS OPER OR MORE
-                const following = db.prepare("select t_handle_name from handles where t_channel_name = ? and t_handle_name = ?").get(to,handle);
+                const following = db.prepare("select t_handle_name from handles where t_channel_name = ? and t_handle_name = ? COLLATE NOCASE").get(to,handle);
                 if (following == undefined) {
                     bot.notice(nick,`Not following ${handle} in ${to}.`); 
                 } else {
@@ -849,7 +849,7 @@ function unfollow (event) {
                         });
                         unfollow(to,handle);
                         bot.notice(nick,`Unfollowed @${handle} in ${to}.`);
-                        const remaining = db.prepare("select * from handles where t_handle_name = ?").get(handle);
+                        const remaining = db.prepare("select * from handles where t_handle_name = ? COLLATE NOCASE").get(handle);
                         if (remaining != undefined)
                             stream.updateChannels(db);
                         else
@@ -942,7 +942,7 @@ bot.on('invite', function(event) {
         to=event.channel,
         isIgnored = true;
     console.log(`Channel: ${to}`);
-    const ignored = db.prepare("select ignore from channels where t_channel_name = ?").get(to);
+    const ignored = db.prepare("select ignore from channels where t_channel_name = ? COLLATE NOCASE").get(to);
     if ( ignored == undefined || ignored.ignore == 0) {
         isIgnored = false;
     }
@@ -1374,7 +1374,7 @@ bot.on('message', async function(event) {
             if (await isModuleEnabledInChannel(to,"twitter follow")) {
                 let db = getDatabase();
                 if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
-                    const following = db.prepare("select * from handles where t_channel_name = ?");
+                    const following = db.prepare("select * from handles where t_channel_name = ? COLLATE NOCASE");
                     let following_handles = [];
                     for (const handle of following.iterate(to)){
                         following_handles.push(handle.t_handle_name);
