@@ -1498,7 +1498,8 @@ bot.on('message', async function(event) {
                                                     },
                                                     "n": 3,
                                                     "response_format": "b64_json",
-                                                    "size": "512x512"
+                                                    "size": "512x512",
+                                                    "user": "undertweetv3"
                                                 }
                                             } else {
                                                 var data = {
@@ -1508,7 +1509,8 @@ bot.on('message', async function(event) {
                                                     },
                                                     "n": 3,
                                                     "response_format": "b64_json",
-                                                    "size": "512x512"
+                                                    "size": "512x512",
+                                                    "user": "undertweetv3"
                                                 }
                                             }
                                             needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
@@ -1583,7 +1585,8 @@ bot.on('message', async function(event) {
                                                 },
                                                 "n": 3,
                                                 "response_format": "b64_json",
-                                                "size": "512x512"
+                                                "size": "512x512",
+                                                "user": "undertweetv3"
                                             }
                                             needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
                                                 if (!error && response.statusCode == 200){
@@ -1631,7 +1634,8 @@ bot.on('message', async function(event) {
                                     "prompt": prompt,
                                     "n": 3,
                                     "response_format": "b64_json",
-                                    "size": "512x512"
+                                    "size": "512x512",
+                                    "user": "undertweetv3"
                                 }
                                 // check if bot is not handling another call
                                 if (!channels[to].openairunning){
