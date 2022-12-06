@@ -283,6 +283,14 @@ function deleteOpenAIImage(to){
             });
         }
     });
+    fs.access(path.join(__dirname,'openaiimages',to,'variation_shrinked.png'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'openaiimages',to,'variation_shrinked.png'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
     fs.access(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), (err) => {
         if (!err){
             fs.unlink(path.join(__dirname,'openaiimages',to,'openaidalle_0.png'), (err) => {
@@ -338,7 +346,7 @@ function postImage(to,from,prompt){
     channels[to].running = false;
 }
 
-function getImageURL (data,options) {
+function getImageURL (data,options,to) {
     return new Promise ( resolve => {
         needle.post(ghettyUrl, data, options, function(error, response, body) {
             if (!error && response.statusCode == 200){
@@ -364,7 +372,7 @@ async function postOpenAIImage(to,from,prompt){
                 content_type: 'image/png'
             }
         };
-        msg += `${i+1}) ${await getImageURL(data, options)} `
+        msg += `${i+1}) ${await getImageURL(data, options,to)} `
     }
     data = {
         image:{
@@ -372,43 +380,85 @@ async function postOpenAIImage(to,from,prompt){
             content_type: 'image/jpg'
         }
     };
-    msg += `1+2+3) ${await getImageURL(data, options)}`;
+    msg += `1+2+3) ${await getImageURL(data, options,to)}`;
     bot.say(to,`@${from} here you go "${prompt}": ${msg}`);
     channels[to].openairunning = false;
 }
 
-function resizeImageIfNotSquare(imagePath,to) {
+function resizeImage(imagePath,to,sizeLimit) {
     return new Promise( resolve => {
         const image = sharp(imagePath);
         var requiredDimension = 0;
-        image
-            .metadata()
-            .then( metadata => {
-                if (metadata.width > metadata.height) {
-                    requiredDimension = metadata.height;
-                } else
-                if (metadata.width < metadata.height) {
-                    requiredDimension = metadata.width;
-                }
-                if (requiredDimension > 0) {
-                    image
-                        .resize( { width: requiredDimension, height: requiredDimension,  fit: "fill"})
-                        .toFile(path.join(__dirname, 'openaiimages',to, 'variation_resized.png'), (err, info) => { 
-                            if (err) {
-                                console.error("An error occurred resizing image:", err);
-                                bot.say(to,`Error resizing image ${err}`);
-                                resolve(false);
-                            } else {
-                                console.log(`Resized image to ${requiredDimension}x${requiredDimension} from ${metadata.width}x${metadata.height}`);
-                                resolve(true);
-                            }
-                            
+        image.metadata().then( metadata => {
+            if (metadata.width > metadata.height) {
+                requiredDimension = metadata.height;
+            } else
+            if (metadata.width < metadata.height) {
+                requiredDimension = metadata.width;
+            }
+            if (requiredDimension > 0) {
+                image.resize( { width: requiredDimension, height: requiredDimension,  fit: "fill"})
+                    .toFile(path.join(__dirname, 'openaiimages',to, 'variation_resized.png'), (err, info) => { 
+                        if (err) {
+                            console.error("An error occurred resizing image:", err);
+                            bot.say(to,`Error resizing image ${err}`);
+                            resolve(false);
+                        } else {
+                            fs.stat(path.join(__dirname,'openaiimages',to,'variation_resized.png'), (err,stats) => {
+                                console.log(`Resized image from ${metadata.width}x${metadata.height} to ${requiredDimension}x${requiredDimension} format ${metadata.format} Size after resize: ${stats.size}`);
+                                if (stats.size >= sizeLimit) {
+                                    const image2 = sharp(path.join(__dirname,'openaiimages',to,'variation_resized.png'));
+                                    image2.metadata().then( metadata => {
+                                        let ratio = (stats.size/(metadata.width*metadata.width)),
+                                        newSize = Math.floor(Math.sqrt(sizeLimit/ratio));
+                                        console.log(`Ratio: ${ratio} Sqrt ${Math.sqrt(sizeLimit/ratio)} New size: ${newSize}`);
+                                        image2.resize( { width: newSize, height: newSize, fit: "inside"} )
+                                        .toFile(path.join(__dirname, 'openaiimages',to, 'variation_shrinked.png'), (err, info) => { 
+                                            if (err) {
+                                                console.error("An error occurred shrinking image:", err);
+                                                bot.say(to,`Error resizing image ${err}`);
+                                                resolve(false);
+                                            } else {
+                                                console.log(`Shrinked image from ${metadata.width}x${metadata.height} to ${newSize}x${newSize} format ${metadata.format}`);
+                                                resolve('variation_shrinked.png');
+                                            }
+                                        });
+                                    });
+                                } else {
+                                    console.log(`Didn't need to shrink resized image with dimensions ${metadata.width}x${metadata.width} size ${stats.size} format ${metadata.format}`)
+                                    resolve('variation_resized.png');
+                                }
+                            });
+                        }
+                    });
+            } else {
+                fs.stat(path.join(__dirname,'openaiimages',to,'variation.png'), (err, stats) => {
+                    console.log(`Didn't resize square image with dimensions ${metadata.width}x${metadata.height} format ${metadata.format} Size after resize: ${stats.size}`);
+                    if (stats.size >= sizeLimit) {
+                        const image2 = sharp(path.join(__dirname,'openaiimages',to,'variation.png'));
+                        image2.metadata().then( metadata => {
+                            let ratio = (stats.size/(metadata.width*metadata.width)),
+                            newSize = Math.floor(Math.sqrt(sizeLimit/ratio));
+                            console.log(`Ratio: ${ratio} Sqrt ${Math.sqrt(sizeLimit/ratio)} New size: ${newSize}`);
+                            image2.resize( { width: newSize, height: newSize, fit: "inside"})
+                            .toFile(path.join(__dirname, 'openaiimages',to, 'variation_shrinked.png'), (err, info) => { 
+                                if (err) {
+                                    console.error("An error occurred shrinking image:", err);
+                                    bot.say(to,`Error resizing image ${err}`);
+                                    resolve(false);
+                                } else {
+                                    console.log(`Shrinked image from ${metadata.width}x${metadata.height} to ${newSize}x${newSize} format ${metadata.format}`);
+                                    resolve('variation_shrinked.png');
+                                }
+                            });
                         });
-                } else {
-                    console.log(`Didn't resize image with dimensions ${metadata.width}x${metadata.height}`);
-                    resolve(false);
-                }
-            });
+                    } else {
+                        console.log(`Didn't need to shrink square image with dimensions ${metadata.width}x${metadata.height} and size ${stats.size} format ${metadata.format}`);
+                        resolve(false);
+                    }
+                });
+            }
+        });
     });
 }
 
@@ -426,7 +476,7 @@ async function postOpenAIImageVariation(to,from){
                 content_type: 'image/png'
             }
         };
-        msg += `${i+1}) ${await getImageURL(data, options)} `
+        msg += `${i+1}) ${await getImageURL(data, options,to)} `
     }
     data = {
         image:{
@@ -434,7 +484,7 @@ async function postOpenAIImageVariation(to,from){
             content_type: 'image/jpg'
         }
     };
-    msg += `1+2+3) ${await getImageURL(data, options)}`;
+    msg += `1+2+3) ${await getImageURL(data, options,to)}`;
     bot.say(to,`@${from} here you go: ${msg}`);
     channels[to].openairunning = false;
 }
@@ -976,11 +1026,11 @@ bot.on('connected', async function() {
             } else {
                 console.log(`Joined channels: '${arrayChannels}'`);
             }
+            stream.startStream(db,bot);
         } else {
             bot.say("#testing",`Error initializing database...`);
         }
     }
-    stream.startStream(db,bot);
 });
 
 bot.on('message', async function(event) {
@@ -1491,17 +1541,17 @@ bot.on('message', async function(event) {
                                     let resized = false;
                                     fs.writeFile(path.join(__dirname,'openaiimages',to,'variation.png'), res.raw, async (err) => {
                                         if (!err) {
-                                            resized = await resizeImageIfNotSquare(path.join(__dirname,'openaiimages',to,'variation.png'),to);
+                                            resized = await resizeImage(path.join(__dirname,'openaiimages',to,'variation.png'),to,3000000);
                                             if (resized) {
                                                 var data = {
                                                     image: {
-                                                        file: path.join(__dirname,'openaiimages',to,'variation_resized.png'),
+                                                        file: path.join(__dirname,'openaiimages',to,resized),
                                                         content_type: "image/png"
                                                     },
                                                     "n": 3,
                                                     "response_format": "b64_json",
                                                     "size": "512x512",
-                                                    "user": "undertweetv3"
+                                                    "user": "undertweetv4"
                                                 }
                                             } else {
                                                 var data = {
@@ -1512,7 +1562,7 @@ bot.on('message', async function(event) {
                                                     "n": 3,
                                                     "response_format": "b64_json",
                                                     "size": "512x512",
-                                                    "user": "undertweetv3"
+                                                    "user": "undertweetv4"
                                                 }
                                             }
                                             needle.post(openAIAPIVariationsUrl, data, {headers: {"Authorization": `Bearer ${openaiAPIKey}`}, multipart: true },function (error,response){
