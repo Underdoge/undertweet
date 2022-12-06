@@ -384,10 +384,10 @@ function resizeImageIfNotSquare(imagePath,to) {
         image
             .metadata()
             .then( metadata => {
-                if (metadata.width < metadata.height) {
+                if (metadata.width > metadata.height) {
                     requiredDimension = metadata.height;
                 } else
-                if (metadata.width > metadata.height) {
+                if (metadata.width < metadata.height) {
                     requiredDimension = metadata.width;
                 }
                 if (requiredDimension > 0) {
@@ -399,11 +399,13 @@ function resizeImageIfNotSquare(imagePath,to) {
                                 bot.say(to,`Error resizing image ${err}`);
                                 resolve(false);
                             } else {
+                                console.log(`Resized image to ${requiredDimension}x${requiredDimension} from ${metadata.width}x${metadata.height}`);
                                 resolve(true);
                             }
                             
                         });
                 } else {
+                    console.log(`Didn't resize image with dimensions ${metadata.width}x${metadata.height}`);
                     resolve(false);
                 }
             });
