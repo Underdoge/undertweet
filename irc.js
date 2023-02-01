@@ -1598,7 +1598,16 @@ bot.on('message', async function(event) {
                                                     if (response.statusCode == 401){
                                                         bot.say(to,`OpenAI Dall-E Error: "Incorrect API key provided. You can find your API key at https://beta.openai.com.`);
                                                     } else {
-                                                        bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                                                        if (response.body.error && response.body.error.message)
+                                                            bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(response.body.error.message)}`);
+                                                        else{
+                                                            if (response.statusCode && !error)
+                                                                bot.say(to,`OpenAI Dall-E Status Code: ${JSON.stringify(response.statusCode)}`);
+                                                            else if (response.statusCode && error)
+                                                                bot.say(to,`OpenAI Dall-E Status Code: ${JSON.stringify(response.statusCode)} Error: ${JSON.stringify(error)}`);
+                                                            else if (error)
+                                                                bot.say(to,`OpenAI Dall-E Error: ${JSON.stringify(error)}`);
+                                                        }
                                                     }
                                                     channels[to].openairunning = false;
                                                 }
