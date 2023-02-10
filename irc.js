@@ -1339,7 +1339,7 @@ bot.on('message', async function(event) {
             }
         } else
         if (message.match(/^\.modules$/)) {
-            commands.push({'nick': from, 'channel': to});
+            commands.push({'nick': from, 'channel': to, 'hostname': hostname});
             bot.whois(from,modules);
         } else
         if ( message.match(/^\.ignore\s.+$/)) {            
