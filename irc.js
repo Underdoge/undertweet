@@ -598,7 +598,7 @@ function modules (event) {
             to = command.channel;
             hostname = command.hostname;
             removeIndex = index;
-            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
+            if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 || config.irc.adminNicks.indexOf(nick) != -1)) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
                     bot.notice(nick, `Enabled modules in ${to}: ${modules}.`);
