@@ -1026,7 +1026,7 @@ bot.on('connected', async function() {
             } else {
                 console.log(`Joined channels: '${arrayChannels}'`);
             }
-            stream.startStream(db,bot);
+            //stream.startStream(db,bot);
         } else {
             bot.say("#testing",`Error initializing database...`);
         }
