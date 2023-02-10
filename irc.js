@@ -598,6 +598,7 @@ function modules (event) {
             to = command.channel;
             hostname = command.hostname;
             removeIndex = index;
+            console.log(`User with nick "${nick}" and hostname "${hostname}" sent .modules in "${to}" channel`);
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 || config.irc.adminNicks.indexOf(nick) != -1)) {
                 let modules = await getEnabledModulesInChannel(to);
                 if (modules && modules.length > 0){
