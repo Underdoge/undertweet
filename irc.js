@@ -90,6 +90,32 @@ and had ${colors.teal(`${participant_count.toLocaleString('en-us')}`)} participa
     bot.say (to,message);
 }
 
+async function getTweetById (id) {
+    let url = `https://api.twitter.com/2/tweets?ids=${id}&tweet.fields=public_metrics,author_id,context_annotations,source,referenced_tweets,created_at&expansions=referenced_tweets.id`;
+    let result = await needle("get", url, { headers: { "Accept": "application/json", "authorization": `Bearer ${token}`, "User-Agent": "v2TweetLookupJS"}});
+    if (result.statusCode == 200 && result.body.data[0]) {
+        result.body.data[0].text = result.body.data[0].text.replace(/\n/g, ' ');
+        htmlKeys.forEach( curr => {
+            result.body.data[0].text = result.body.data[0].text.replace(new RegExp(curr,'g'),unescape(curr,result.body.data[0].text));
+        });
+        return result.body.data[0];
+    } else {
+        bot.say("#testing",`statusCode: ${result.statusCode} statusMessage: ${result.statusMessage}`);
+        return null;
+    }
+}
+
+async function getTweetAuthorById (id) {
+    let url = `https://api.twitter.com/2/users/${id}`;
+    let result = await needle("get", url, { headers: { "Accept": "application/json", "authorization": `Bearer ${token}`}});
+    if (result.statusCode == 200 && result.body.data) {
+        return result.body.data;
+    } else {
+        bot.say("#testing",`statusCode: ${result.statusCode} statusMessage: ${result.statusMessage}`);
+        return null;
+    }
+}
+
 function sendYouTubevideo(to,title,desc,account,date,likes,views,duration,id) {
     let message = null, hours="", minutes="", seconds="";
     if (parseInt(likes) > 1000000) {
@@ -1146,30 +1172,16 @@ bot.on('message', async function(event) {
                     if (message.match(/t\.co\/\w+/)) {
                         // message contains a t.co link
                         message=`https://${message.match(/t\.co\/\w+/)[0]}`;
-                        needle.head(message, function(err,res) {
+                        needle.head(message, async function(err,res) {
                             message=res.headers.location;
                             if (message && message.match(/twitter\.com\/\w+\/status\/\d+/)) {
                                 // it is a valid twitter status url
-                                let
-                                    id = message.slice(message.search(/\/\d+/)+1),
-                                    url = 'https://api.twitter.com/1.1/statuses/show.json',
-                                    data = {
-                                        id,
-                                        'tweet_mode': 'extended',
-                                    };
-                                needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                                        if (err) {
-                                        bot.notice(from,`Error: ${err}`);
-                                        throw Error(err);
-                                    }
-                                    if (!result.errors && result) {
-                                        result.text = result.full_text.replace(/\n/g, ' ');
-                                        htmlKeys.forEach( curr => {
-                                            result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr,result.text));
-                                        });
-                                        sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
-                                    }
-                                });
+                                let id = message.slice(message.search(/\/\d+/)+1),
+                                    tweet = await getTweetById(id),
+                                    author = await getTweetAuthorById(tweet.author_id);
+                                if (tweet) {
+                                    sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.retweet_count,tweet.public_metrics.like_count,false,null,null);
+                                }
                             }
                         });
                         return;
@@ -1179,36 +1191,17 @@ bot.on('message', async function(event) {
                         message=message.match(/twitter\.com\/\w+\/status\/\d+/)[0];
                     else   
                         message=message.match(/twitter\.com\/i\/web\/status\/\d+/)[0];
-                    let
-                        id = message.slice(message.search(/\/status\/\d+/)+8),
-                        url = 'https://api.twitter.com/1.1/statuses/show.json',
-                        data = {
-                            id,
-                            'tweet_mode': 'extended',
-                        };
-                        
-                    needle.request('get', url, data, { headers: { "authorization": `Bearer ${token}`}}, function(err, r, result) {
-                            if (err) {
-                            bot.notice(from,`Error: ${err}`);
-                            throw Error(err);
-                        }
-                        if (!result.errors && result) {
-                            result.text = result.full_text.replace(/\n/g, ' ');
-                            htmlKeys.forEach( curr => {
-                                result.text = result.text.replace(new RegExp(curr,'g'),unescape(curr,result.text));
-                            });
-                            if (result.quoted_status) {
-                                result.quoted_status.text = result.quoted_status.full_text.replace(/\n/g,' ');
-                                result.text = result.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
-                                htmlKeys.forEach( curr => {
-                                    result.quoted_status.text = result.quoted_status.text.replace(new RegExp(curr,'g'),unescape(curr,result.quoted_status.text));
-                                });
-                                sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,true,result.quoted_status.user.screen_name,result.quoted_status.text);
-                            } else {
-                                sendTweet(to,result.text,result.user.name,result.created_at,result.retweet_count,result.favorite_count,false,null,null);
-                            }
-                        }
-                    });
+                    let id = message.slice(message.search(/\/status\/\d+/)+8),
+                        tweet = await getTweetById(id),
+                        author = await getTweetAuthorById(tweet.author_id);
+                    if (tweet && tweet.referenced_tweets[0] && tweet.referenced_tweets[0].type == "quoted") {
+                        let quotted_tweet = await getTweetById(tweet.referenced_tweets[0].id),
+                            quotted_tweet_author = await getTweetAuthorById(quotted_tweet.author_id);
+                        tweet.text = tweet.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                        sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,true,quotted_tweet_author.username,quotted_tweet.text);
+                    } else if (tweet) {
+                        sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,false,null,null);
+                    }
                 }
             }
         } else //youtube link
