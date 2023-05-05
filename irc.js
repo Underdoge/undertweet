@@ -1073,6 +1073,7 @@ bot.on('message', async function(event) {
                 // if message is .ut @useraccount
                 if (message.match(/^\.ut\s@\w+$/)) {
                     // get that account's last tweet
+                    // https://api.twitter.com/2/users/:id/tweets?tweet.fields=created_at&expansions=author_id&user.fields=created_at&max_results=5
                     if (config.twitter && config.twitter.consumerKey && config.twitter.consumerSecret && config.twitter.token && config.twitter.token_secret) {
                         let
                             account = message.slice(message.search(/@/)+1),
@@ -1194,7 +1195,7 @@ bot.on('message', async function(event) {
                     let id = message.slice(message.search(/\/status\/\d+/)+8),
                         tweet = await getTweetById(id),
                         author = await getTweetAuthorById(tweet.author_id);
-                    if (tweet && tweet.referenced_tweets[0] && tweet.referenced_tweets[0].type == "quoted") {
+                    if (tweet && tweet.referenced_tweets && tweet.referenced_tweets[0].type == "quoted") {
                         let quotted_tweet = await getTweetById(tweet.referenced_tweets[0].id),
                             quotted_tweet_author = await getTweetAuthorById(quotted_tweet.author_id);
                         tweet.text = tweet.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
