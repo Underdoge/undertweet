@@ -12,9 +12,9 @@ A twitter bot for irc.
 
     Modify the config.json file to your needs: https://gist.github.com/Underdoge/e80351c0566a9f9b186ac799e2b616f4
 
-    You must include a Twitter application's Consumer Key and Consumer Secret.
+    You must include a Twitter application's Bearer Token.
 
-    To obtain them, visit https://apps.twitter.com/ and create a new App.
+    To obtain it, visit https://apps.twitter.com/ and create a new App.
 
 ## Running
 
