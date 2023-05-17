@@ -271,78 +271,72 @@ exports.startStream = async function(db,bot) {
                         let chunk = null;
                         if (chunk = this.read()) {
                             if (chunk != "\r\n") {
-                                let tweet = null;
-                                try {
-                                    tweet = JSON.parse(chunk);
-                                    if (tweet && tweet.data) {
-                                        let
-                                            id = tweet.data.id,
-                                            json = await twitter.getTweetById(id);
-                                        if (json) {
-                                            let author = await twitter.getTweetAuthorById(json.author_id);
-                                            channels.forEach(function (chan) {
-                                                try{
-                                                    screen_names = chan[1].toString().split(',');
-                                                } catch (e) {
-                                                    console.log(`Channel: ${chan}`);
-                                                    console.log(`Error: ${e}`);
-                                                    screen_names = [];
-                                                }
-                                                screen_names.forEach(async function (screen_name) {
-                                                    //need to make call to make call to get tweet and insert in json variable
-                                                    if (screen_name == author.username) {
+                                let tweet = JSON.parse(chunk);
+                                if (tweet && tweet.data) {
+                                    let
+                                        id = tweet.data.id,
+                                        json = await twitter.getTweetById(id);
+                                    if (json) {
+                                        let author = await twitter.getTweetAuthorById(json.author_id);
+                                        channels.forEach(function (chan) {
+                                            try{
+                                                screen_names = chan[1].toString().split(',');
+                                            } catch (e) {
+                                                console.log(`Channel: ${chan}`);
+                                                console.log(`Error: ${e}`);
+                                                screen_names = [];
+                                            }
+                                            screen_names.forEach(async function (screen_name) {
+                                                //need to make call to make call to get tweet and insert in json variable
+                                                if (screen_name == author.username) {
+                                                    htmlKeys.forEach( curr => {
+                                                        json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                                    });
+                                                    if (json.referenced_tweets && json.referenced_tweets[0].type == "quoted") {
+                                                        let quotted_tweet = await twitter.getTweetById(json.referenced_tweets[0].id),
+                                                            quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id);
+                                                        json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
                                                         htmlKeys.forEach( curr => {
-                                                            json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
+                                                            quotted_tweet.text = quotted_tweet.text.replace(new RegExp(curr,'g'),unescape(curr));
                                                         });
-                                                        if (json.referenced_tweets && json.referenced_tweets[0].type == "quoted") {
-                                                            let quotted_tweet = await twitter.getTweetById(json.referenced_tweets[0].id),
-                                                                quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id);
-                                                            json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
-                                                            htmlKeys.forEach( curr => {
-                                                                quotted_tweet.text = quotted_tweet.text.replace(new RegExp(curr,'g'),unescape(curr));
-                                                            });
-                                                            message = `${colors.teal(json.text)} · by ${author.name} (@${author.username}) \
+                                                        message = `${colors.teal(json.text)} · by ${author.name} (@${author.username}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.public_metrics.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)} \
 Quoting @${quotted_tweet_author.username}: ${colors.teal(quotted_tweet.text)}`;
-                                                    // check if message too long for IRC
-                                                            if (message.length > 350) {
-                                                                bot.say(chan[0],`${colors.teal(json.text)}`);
-                                                                bot.say(chan[0],`by ${author.name} (@${author.username}) \
+                                                // check if message too long for IRC
+                                                        if (message.length > 350) {
+                                                            bot.say(chan[0],`${colors.teal(json.text)}`);
+                                                            bot.say(chan[0],`by ${author.name} (@${author.username}) \
 on ${new Date(json.created_at).toLocaleDateString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.public_metrics.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`);
-                                                                bot.say(chan[0],`Quoting @${quotted_tweet_author.name}: ${colors.teal(quotted_tweet.text)}`);
-                                                                return;
-                                                            } else {
-                                                                bot.say(chan[0],message);
-                                                            }
+                                                            bot.say(chan[0],`Quoting @${quotted_tweet_author.name}: ${colors.teal(quotted_tweet.text)}`);
+                                                            return;
                                                         } else {
-                                                            message = `${colors.teal(json.text)} · by ${author.name} (@${author.username}) \
+                                                            bot.say(chan[0],message);
+                                                        }
+                                                    } else {
+                                                        message = `${colors.teal(json.text)} · by ${author.name} (@${author.username}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.public_metrics.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`;
-                                                            if (message.length > 350) {
-                                                                bot.say(chan[0],`${colors.teal(json.text)}`);
-                                                                bot.say(chan[0],`by ${author.name} (@${author.username}) \
+                                                        if (message.length > 350) {
+                                                            bot.say(chan[0],`${colors.teal(json.text)}`);
+                                                            bot.say(chan[0],`by ${author.name} (@${author.username}) \
 on ${new Date(json.created_at).toLocaleTimeString('en-us', dateOptions)} ·\
 ${colors.green(` ♻ ${json.public_metrics.retweet_count.toLocaleString('en-us')}`)}\
 ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`);
-                                                        return;
-                                                            } else {
-                                                                bot.say(chan[0],message);
-                                                            }
+                                                    return;
+                                                        } else {
+                                                            bot.say(chan[0],message);
                                                         }
-                                                    }                                        
-                                                });
+                                                    }
+                                                }                                        
                                             });
-                                        }
+                                        });
                                     }
-                                } catch (e) {
-                                    console.log(`Error: ${e}`);
-                                    console.log(`Chunk: ${JSON.stringify(chunk)}`);
-                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error: ${e} Chunk: ${JSON.stringify(chunk)}`);                                        }
+                                }
                                 // limit notices
                                 if (tweet && tweet.limit) {
                                     console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Limit notice: ${JSON.stringify(tweet.limit,null,'    ')}`);
