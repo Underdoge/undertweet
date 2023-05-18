@@ -195,8 +195,7 @@ exports.startStream = async function(db,bot) {
                             "Authorization": `Bearer ${token}`
                         },
                         timeout: 20000
-                    });
-                    stream.on('error', function (error) {
+                    }).on('error', function (error) {
                         if (error.code == "ECONNRESET") {
                             setLongWait(response.headers["x-rate-limit-reset"]);
                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
@@ -336,6 +335,8 @@ ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`
                                             });
                                         });
                                     }
+                                } else {
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Non tweet data: ${tweet}}`);
                                 }
                                 // limit notices
                                 if (tweet && tweet.limit) {
