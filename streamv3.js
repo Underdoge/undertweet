@@ -10,6 +10,11 @@ const
         'weekday': 'long', 'year': 'numeric', 'month': 'short',
         'day': 'numeric', 'hour': '2-digit', 'minute': '2-digit',
     },
+    longDateOptions = {
+        'timeZone':'America/Mexico_City',
+        'weekday': 'long', 'year': 'numeric', 'month': 'short',
+        'day': 'numeric', 'hour': '2-digit', 'minute': '2-digit', 'second': '2-digit'
+    },
     htmlMap ={
         '&amp;': '&', '&lt;':'<', '&gt;':'>',
     },
@@ -25,11 +30,25 @@ var
     channels = [],
     stream = null,
     message='',
-    screen_names='';
+    screen_names='',
+    last_keepalive = null;
+
+function getUnixTimeDifferenceKeepAlive(unixTime){
+    let difference = Math.floor(Date.now()/1000) - unixTime;    
+    return Math.floor(difference);
+}
 
 function getUnixTimeDifference(unixTime){
     let difference = unixTime - Math.floor(Date.now()/1000);    
-    return Math.floor(difference/60);;
+    return Math.floor(difference/60);
+}
+
+function getLastKeepAlive () {
+    return last_keepalive;
+}
+
+function setLastKeepAlive (keepalive) {
+    last_keepalive = keepalive;
 }
 
 function unescape(char) {
@@ -355,6 +374,12 @@ ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`
                             if (tweet && tweet.warning) {
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stall warning: ${JSON.stringify(tweet.warning,null,'    ')}`);
                             }
+                        } else {
+                            console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Undertweet Keepalive`);
+                            if (getLastKeepAlive()) {
+                                console.log(`Last Keepalive ${getLastKeepAlive()} Current Time ${Math.floor(Date.now()/1000)} Time difference ${getUnixTimeDifferenceKeepAlive(getLastKeepAlive())}`);
+                            }
+                            setLastKeepAlive(Math.floor(Date.now()/1000));
                         }
                     });
                     setStream(stream);
