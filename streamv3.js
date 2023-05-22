@@ -375,13 +375,19 @@ ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`
                                 console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stall warning: ${JSON.stringify(tweet.warning,null,'    ')}`);
                             }
                         } else {
-                            console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Undertweet Keepalive`);
-                            if (getLastKeepAlive()) {
-                                console.log(`Last Keepalive ${getLastKeepAlive()} Current Time ${Math.floor(Date.now()/1000)} Time difference ${getUnixTimeDifferenceKeepAlive(getLastKeepAlive())}`);
-                            }
                             setLastKeepAlive(Math.floor(Date.now()/1000));
+                            setTimeout(() => {
+                                if (getUnixTimeDifferenceKeepAlive(getLastKeepAlive()) > 60){
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
+                                    exports.endStream();
+                                } else {
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Keepalive within limits, time difference was ${getUnixTimeDifferenceKeepAlive(getLastKeepAlive())} seconds.`);
+                                }
+                            }, 60000);
                         }
                     });
+                    setLastKeepAlive(Math.floor(Date.now()/1000));
                     setStream(stream);
                 },10000);
             }
