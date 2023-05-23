@@ -378,11 +378,11 @@ ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`
                             setLastKeepAlive(Math.floor(Date.now()/1000));
                             setTimeout(() => {
                                 if (getUnixTimeDifferenceKeepAlive(getLastKeepAlive()) > 60){
-                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
-                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
                                     exports.endStream();
                                 } else {
-                                    console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Keepalive within limits, time difference was ${getUnixTimeDifferenceKeepAlive(getLastKeepAlive())} seconds.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Keepalive within limits, time difference was ${getUnixTimeDifferenceKeepAlive(getLastKeepAlive())} seconds.`);
                                 }
                             }, 60000);
                         }
