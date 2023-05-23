@@ -291,9 +291,9 @@ exports.startStream = async (db,bot) => {
                             if (tweet && tweet.data) {
                                 let
                                     id = tweet.data.id,
-                                    json = await twitter.getTweetById(id);
+                                    json = await twitter.getTweetById(id,bot);
                                 if (json) {
-                                    let author = await twitter.getTweetAuthorById(json.author_id);
+                                    let author = await twitter.getTweetAuthorById(json.author_id,bot);
                                     channels.forEach((chan) => {
                                         try{
                                             screen_names = chan[1].toString().split(',');
@@ -309,8 +309,8 @@ exports.startStream = async (db,bot) => {
                                                     json.text = json.text.replace(new RegExp(curr,'g'),unescape(curr));
                                                 });
                                                 if (json.referenced_tweets && json.referenced_tweets[0].type == "quoted") {
-                                                    let quotted_tweet = await twitter.getTweetById(json.referenced_tweets[0].id),
-                                                        quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id);
+                                                    let quotted_tweet = await twitter.getTweetById(json.referenced_tweets[0].id,bot),
+                                                        quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id,bot);
                                                     json.text = json.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
                                                     htmlKeys.forEach( curr => {
                                                         quotted_tweet.text = quotted_tweet.text.replace(new RegExp(curr,'g'),unescape(curr));

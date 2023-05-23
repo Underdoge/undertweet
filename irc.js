@@ -818,7 +818,7 @@ function follow (event) {
             removeIndex = index;
             if ( event.channels.indexOf(to) >= 0 && ( event.channels[event.channels.indexOf(to)-1] == '@' || event.channels[event.channels.indexOf(to)-1] == '&' || event.channels[event.channels.indexOf(to)-1] == '~' || config.irc.adminHostnames.indexOf(hostname) != -1 )) {
                 // IRC USER HAS OPER OR MORE
-                let result = await twitter.findTwitterUser(handle);
+                let result = await twitter.findTwitterUser(handle,bot);
                 if (result) {
                     console.log(result);
                     // add twitter ID
@@ -1044,7 +1044,7 @@ bot.on('message', async function(event) {
                     // get that account's last tweet
                     if (token) {
                         let username = message.slice(message.search(/@/)+1),
-                            result = await twitter.getLastTweetFromUsername(username);
+                            result = await twitter.getLastTweetFromUsername(username,bot);
                         if (result) {
                             result[0].text = result[0].text.replace(/\n/g, ' ');
                             htmlKeys.forEach( curr => {
@@ -1062,9 +1062,9 @@ bot.on('message', async function(event) {
                     if (token) {
                         let
                             sq = message.slice(4),
-                            result = await twitter.seartchTweets(sq);
+                            result = await twitter.seartchTweets(sq,bot);
                         if (result) {
-                            let author = await twitter.getTweetAuthorById (result[0].author_id);
+                            let author = await twitter.getTweetAuthorById (result[0].author_id,bot);
                             result[0].text = result[0].text.replace(/\n/g, ' ');
                             htmlKeys.forEach( curr => {
                                 result[0].text = result[0].text.replace(new RegExp(curr,'g'),unescape(curr,result[0].text));
@@ -1094,8 +1094,8 @@ bot.on('message', async function(event) {
                             if (message && message.match(/twitter\.com\/\w+\/status\/\d+/)) {
                                 // it is a valid twitter status url
                                 let id = message.slice(message.search(/\/\d+/)+1),
-                                    tweet = await twitter.getTweetById(id),
-                                    author = await twitter.getTweetAuthorById(tweet.author_id);
+                                    tweet = await twitter.getTweetById(id,bot),
+                                    author = await twitter.getTweetAuthorById(tweet.author_id,bot);
                                 if (tweet) {
                                     sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.retweet_count,tweet.public_metrics.like_count,false,null,null);
                                 }
@@ -1109,11 +1109,11 @@ bot.on('message', async function(event) {
                     else   
                         message=message.match(/twitter\.com\/i\/web\/status\/\d+/)[0];
                     let id = message.slice(message.search(/\/status\/\d+/)+8),
-                        tweet = await twitter.getTweetById(id),
-                        author = await twitter.getTweetAuthorById(tweet.author_id);
+                        tweet = await twitter.getTweetById(id,bot),
+                        author = await twitter.getTweetAuthorById(tweet.author_id,bot);
                     if (tweet && tweet.referenced_tweets && tweet.referenced_tweets[0].type == "quoted") {
-                        let quotted_tweet = await twitter.getTweetById(tweet.referenced_tweets[0].id),
-                            quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id);
+                        let quotted_tweet = await twitter.getTweetById(tweet.referenced_tweets[0].id,bot),
+                            quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id,bot);
                         tweet.text = tweet.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
                         sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,true,quotted_tweet_author.username,quotted_tweet.text);
                     } else if (tweet) {
@@ -1206,7 +1206,7 @@ bot.on('message', async function(event) {
             if (await isModuleEnabledInChannel(to,"twitter expand")) {
                 if (token) {
                     let id = message.slice(message.search(/\/spaces\/\w+/)+8,message.search(/\?/)),
-                        result = await twitter.getSpaceById(id);
+                        result = await twitter.getSpaceById(id,bot);
                     if (result) {
                         htmlKeys.forEach( curr => {
                             result.title = result.title.replace(new RegExp(curr,'g'),unescape(curr,result.title));
@@ -1336,7 +1336,7 @@ bot.on('message', async function(event) {
                         following_handles.push(handle.t_handle_name);
                     }
                     if (following_handles.length > 0){
-                        let result = await twitter.findTwitterUsers(following_handles.toString());
+                        let result = await twitter.findTwitterUsers(following_handles.toString(),bot);
                         if (result) {
                             let accounts=`${result[0].name} (@${result[0].username})`;
                             result.forEach( function (current,index) {
