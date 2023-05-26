@@ -215,12 +215,13 @@ exports.startStream = async (db,bot) => {
                         },
                         timeout: 20000
                     }).on('error', (error) => {
+                        setLastKeepAlive(Math.floor(Date.now()/1000));
                         if (error.code == "ECONNRESET") {
                             setLongWait(response.headers["x-rate-limit-reset"]);
                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }`);
-                            bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Restarting in 1 minute.`);
+                            bot.say('#testing',`Error in connection: "${error.code}". Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }.`);
                             exports.endStream(); 
-                            setTimeout(() => {exports.startStream(db,bot)},60*1000);
+                            exports.startStream(db,bot);
                         } else {
                             setLongWait(response.headers["x-rate-limit-reset"]);
                             console.log(`[${new Date().toLocaleTimeString('en-us', dateOptions)}] Error Code:${error.code} \n Error:${error}. Headers: x-rate-limit-limit=${ response.headers["x-rate-limit-limit"] } x-rate-limit-remaining=${response.headers[ "x-rate-limit-remaining"] } x-rate-limit-reset=${response.headers["x-rate-limit-reset"] }. Next rate limit reset in ${getLongWait()} minutes.`);
@@ -377,9 +378,9 @@ ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`
                         } else {
                             setLastKeepAlive(Math.floor(Date.now()/1000));
                             setTimeout(() => {
-                                if (getUnixTimeDifferenceKeepAlive(getLastKeepAlive()) >= 40){
-                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 40 seconds, restarting.`);
-                                    console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 40 seconds, restarting.`);
+                                if (getUnixTimeDifferenceKeepAlive(getLastKeepAlive()) >= 60){
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
                                     exports.endStream();
                                     setTimeout(() => { exports.startStream(db,bot);},1000);
                                 } else {
