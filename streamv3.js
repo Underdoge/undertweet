@@ -377,10 +377,11 @@ ${colors.red(` ❤ ${json.public_metrics.like_count.toLocaleString('en-us')}`)}`
                         } else {
                             setLastKeepAlive(Math.floor(Date.now()/1000));
                             setTimeout(() => {
-                                if (getUnixTimeDifferenceKeepAlive(getLastKeepAlive()) > 60){
-                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
-                                    console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 60 seconds, restarting.`);
+                                if (getUnixTimeDifferenceKeepAlive(getLastKeepAlive()) >= 40){
+                                    bot.say('#testing',`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 40 seconds, restarting.`);
+                                    console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Stream stopped responding for 40 seconds, restarting.`);
                                     exports.endStream();
+                                    setTimeout(() => { exports.startStream(db,bot);},1000);
                                 } else {
                                     console.log(`[${new Date().toLocaleTimeString('en-us', longDateOptions)}] Keepalive within limits, time difference was ${getUnixTimeDifferenceKeepAlive(getLastKeepAlive())} seconds.`);
                                 }
