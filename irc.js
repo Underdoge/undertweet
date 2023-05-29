@@ -105,6 +105,12 @@ function sendYouTubevideo(to,title,desc,account,date,likes,views,duration,id) {
         views = (Math.round(parseInt(views)/1000 * 100) / 100).toString() + "K";
     }
     desc = desc.replaceAll("\n"," ").replaceAll("  "," ");
+    htmlKeys.forEach( curr => {
+        desc = desc.replace(new RegExp(curr,'g'),unescape(curr, desc));
+    });
+    htmlKeys.forEach( curr => {
+        title = title.replace(new RegExp(curr,'g'),unescape(curr, title));
+    });
     hours = (duration.match(/[0-9]{1,2}H/) ? duration.match(/[0-9]{1,2}H/)[0].slice(0,duration.match(/[0-9]{1,2}H/)[0].indexOf("H")) : "");
     minutes = (duration.match(/[0-9]{1,2}M/) ? (parseInt(duration.match(/[0-9]{1,2}M/)[0].slice(0,duration.match(/[0-9]{1,2}M/)[0].indexOf("M"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}M/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}M/)[0].slice(0,2)) : "00");
     seconds = (duration.match(/[0-9]{1,2}S/) ? (parseInt(duration.match(/[0-9]{1,2}S/)[0].slice(0,duration.match(/[0-9]{1,2}S/)[0].indexOf("S"))) < 10 ? ("0" + duration.match(/[0-9]{1,2}S/)[0].slice(0,1)) : duration.match(/[0-9]{1,2}S/)[0].slice(0,2)) : "00");
@@ -1097,6 +1103,9 @@ bot.on('message', async function(event) {
                                     tweet = await twitter.getTweetById(id,bot),
                                     author = await twitter.getTweetAuthorById(tweet.author_id,bot);
                                 if (tweet) {
+                                    htmlKeys.forEach( curr => {
+                                        tweet.text = tweet.text.replace(new RegExp(curr,'g'),unescape(curr, tweet.text));
+                                    });
                                     sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.retweet_count,tweet.public_metrics.like_count,false,null,null);
                                 }
                             }
@@ -1111,13 +1120,20 @@ bot.on('message', async function(event) {
                     let id = message.slice(message.search(/\/status\/\d+/)+8),
                         tweet = await twitter.getTweetById(id,bot),
                         author = await twitter.getTweetAuthorById(tweet.author_id,bot);
-                    if (tweet && tweet.referenced_tweets && tweet.referenced_tweets[0].type == "quoted") {
-                        let quotted_tweet = await twitter.getTweetById(tweet.referenced_tweets[0].id,bot),
-                            quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id,bot);
-                        tweet.text = tweet.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
-                        sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,true,quotted_tweet_author.username,quotted_tweet.text);
-                    } else if (tweet) {
-                        sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,false,null,null);
+                    if (tweet)
+                        htmlKeys.forEach( curr => {
+                            tweet.text = tweet.text.replace(new RegExp(curr,'g'),unescape(curr, tweet.text));
+                        });
+                        if (tweet.referenced_tweets && tweet.referenced_tweets[0].type == "quoted") {
+                            let quotted_tweet = await twitter.getTweetById(tweet.referenced_tweets[0].id,bot),
+                                quotted_tweet_author = await twitter.getTweetAuthorById(quotted_tweet.author_id,bot);
+                            tweet.text = tweet.text.replace(/https:\/\/t\.co\/.+$/i,'').trimRight();
+                            htmlKeys.forEach( curr => {
+                                quotted_tweet.text = quotted_tweet.text.replace(new RegExp(curr,'g'),unescape(curr, quotted_tweet.text));
+                            });
+                            sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,true,quotted_tweet_author.username,quotted_tweet.text);
+                        } else {
+                            sendTweet(to,tweet.text,author.name,tweet.created_at,tweet.public_metrics.retweet_count,tweet.public_metrics.like_count,false,null,null);
                     }
                 } else { // No auth data, ask user to authenticate bot 
                     bot.notice(from,'No auth data.');
