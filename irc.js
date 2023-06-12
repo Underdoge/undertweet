@@ -6,13 +6,13 @@ const
     Database = require('better-sqlite3'),
     joinImages = require("join-images"),
     needle = require('needle'),
-    twitter = require('./lib/twitter'),
+    //twitter = require('./lib/twitter'),
     fs = require("fs"),
     packageInf = require('./package'),
     IRC = require('irc-framework'),
     colors = require('irc-colors'),
     config = require('./config'),
-    stream = require('./streamv3'),
+    //stream = require('./streamv3'),
     path = require('path'),
     host = config.irc.host,
     port = config.irc.port,
@@ -1027,7 +1027,7 @@ bot.on('connected', async function() {
             } else {
                 console.log(`Joined channels: '${arrayChannels}'`);
             }
-            stream.startStream(db,bot);
+            //stream.startStream(db,bot);
         } else {
             bot.say("#testing",`Error initializing database...`);
         }
@@ -1043,7 +1043,8 @@ bot.on('message', async function(event) {
         to=event.target;
     // if message is a valid .ut XXXXX string
     if (config.irc.ignoreHostnames.indexOf(hostname) ===-1 && config.irc.ignoreNicks.indexOf(from) === -1 && config.irc.ignoreIdents.indexOf(ident) === -1) {
-        if (message.match(/^\.ut\s.+$/)) {
+        // Twitter API Access removed
+        /*if (message.match(/^\.ut\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"twitter search")) {
                 // if message is .ut @useraccount
                 if (message.match(/^\.ut\s@\w+$/)) {
@@ -1139,7 +1140,88 @@ bot.on('message', async function(event) {
                     bot.notice(from,'No auth data.');
                 }
             }
-        } else //youtube link
+        } else
+        if (message.match(/twitter\.com\/i\/spaces\/.+&?/)) {
+            if (await isModuleEnabledInChannel(to,"twitter expand")) {
+                if (token) {
+                    let id = message.slice(message.search(/\/spaces\/\w+/)+8,message.search(/\?/)),
+                        result = await twitter.getSpaceById(id,bot);
+                    if (result) {
+                        htmlKeys.forEach( curr => {
+                            result.title = result.title.replace(new RegExp(curr,'g'),unescape(curr,result.title));
+                        });
+                        sendSpace(to,result.title,result.state,result.started_at,result.host_ids,result.participant_count);
+                    }
+                } else { // No auth data, ask user to authenticate bot 
+                    bot.notice(from,'No auth data.');
+                }
+            }
+        } else
+        if (message.match(/^\.follow\s@?\w+$/)) {
+            // .follow command - add user ID to stream
+            if (await isModuleEnabledInChannel(to,"twitter follow")) {
+                if (token) {
+                    var handle = null;
+                    if (message.match(/^\.follow\s@\w+$/))
+                        handle = message.slice(message.search(/@\w+$/)+1);
+                    else
+                        handle = message.slice(message.search(/\s\w+$/)+1);
+                    commands.push({'nick': from, 'handle': handle, 'channel': to, 'hostname': hostname});
+                    bot.whois(from,follow);
+                } else // No auth data, ask user to authenticate bot
+                    bot.notice(from,'No auth data.');
+            } else {
+                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
+            }
+        } else
+        if (message.match(/^\.unfollow\s@?\w+$/)) {
+            // .unfollow command - remove user ID from stream
+            if (await isModuleEnabledInChannel(to,"twitter follow")) {
+                if (token) {
+                    var handle=null;
+                    if (message.match(/^\.unfollow\s@\w+$/))
+                        handle = message.slice(message.search(/@\w+$/)+1);
+                    else
+                        handle = message.slice(message.search(/\s\w+$/)+1);
+                    // add command to commands queue
+                    commands.push({'nick': from, 'handle': handle, 'channel': to, 'hostname': hostname});
+                    bot.whois(from, unfollow);
+                } else // No auth data, ask user to authenticate bot
+                    bot.notice(from,'No auth data.');
+            } else {
+                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
+            }
+        } else
+        if (message.match(/^\.following$/)) {
+            if (await isModuleEnabledInChannel(to,"twitter follow")) {
+                let db = getDatabase();
+                if (token) {
+                    const following = db.prepare("select * from handles where t_channel_name = ? COLLATE NOCASE");
+                    let following_handles = [];
+                    for (const handle of following.iterate(to)){
+                        following_handles.push(handle.t_handle_name);
+                    }
+                    if (following_handles.length > 0){
+                        let result = await twitter.findTwitterUsers(following_handles.toString(),bot);
+                        if (result) {
+                            let accounts=`${result[0].name} (@${result[0].username})`;
+                            result.forEach( function (current,index) {
+                                if (index>0)
+                                    accounts+=`, ${current.name} (@${current.username})`;
+                            });
+                            bot.notice(from,`Following: ${accounts} in ${to}.`);
+                        } else {
+                            bot.notice(from,`Not following anyone in ${to} yet!.`);
+                        }
+                    } else {
+                        bot.notice(from,`Not following anyone in ${to} yet!.`); 
+                    }
+                } else // No auth data, ask user to authenticate bot
+                    bot.notice(from,'No auth data.');
+            } else {
+                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
+            }
+        } else //youtube link */
         if (message.match(/(https?:\/\/)?(www\.)?youtube\.com\/.+/) || message.match(/(https?:\/\/)?(www\.)?youtu\.be\/.+/)) {
             if (await isModuleEnabledInChannel(to,"youtube read")) {
                 let likes = 0, title = "", date = "", description = "", account = "", duration = "", v = "", youtubeapirequest = "", views = "", result = "";
@@ -1218,22 +1300,6 @@ bot.on('message', async function(event) {
                 bot.notice(from,`The 'youtube search' module is not enabled in ${to}.`);
             }
         } else
-        if (message.match(/twitter\.com\/i\/spaces\/.+&?/)) {
-            if (await isModuleEnabledInChannel(to,"twitter expand")) {
-                if (token) {
-                    let id = message.slice(message.search(/\/spaces\/\w+/)+8,message.search(/\?/)),
-                        result = await twitter.getSpaceById(id,bot);
-                    if (result) {
-                        htmlKeys.forEach( curr => {
-                            result.title = result.title.replace(new RegExp(curr,'g'),unescape(curr,result.title));
-                        });
-                        sendSpace(to,result.title,result.state,result.started_at,result.host_ids,result.participant_count);
-                    }
-                } else { // No auth data, ask user to authenticate bot 
-                    bot.notice(from,'No auth data.');
-                }
-            }
-        } else
         // any non-twitter non-youtube url and ignore files
         if (message.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)) {
             if (await isModuleEnabledInChannel(to,"url read")) {
@@ -1288,7 +1354,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
+            if (module == "dalle" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
                 commands.push({'nick': from, 'module': module, 'channel': to, 'hostname': hostname});
                 bot.whois(from,enable);
             } else {
@@ -1300,76 +1366,11 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "twitter expand" || module == "dalle" || module == "twitter follow" || module == "twitter search" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
+            if (module == "dalle" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
                 commands.push({'nick': from, 'module': module, 'channel': to, 'hostname': hostname});
                 bot.whois(from,disable);
             } else {
                 bot.notice(from,`Module '${module}'not found`);
-            }
-        }else
-        if (message.match(/^\.follow\s@?\w+$/)) {
-            // .follow command - add user ID to stream
-            if (await isModuleEnabledInChannel(to,"twitter follow")) {
-                if (token) {
-                    var handle = null;
-                    if (message.match(/^\.follow\s@\w+$/))
-                        handle = message.slice(message.search(/@\w+$/)+1);
-                    else
-                        handle = message.slice(message.search(/\s\w+$/)+1);
-                    commands.push({'nick': from, 'handle': handle, 'channel': to, 'hostname': hostname});
-                    bot.whois(from,follow);
-                } else // No auth data, ask user to authenticate bot
-                    bot.notice(from,'No auth data.');
-            } else {
-                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
-            }
-        } else
-        if (message.match(/^\.unfollow\s@?\w+$/)) {
-            // .unfollow command - remove user ID from stream
-            if (await isModuleEnabledInChannel(to,"twitter follow")) {
-                if (token) {
-                    var handle=null;
-                    if (message.match(/^\.unfollow\s@\w+$/))
-                        handle = message.slice(message.search(/@\w+$/)+1);
-                    else
-                        handle = message.slice(message.search(/\s\w+$/)+1);
-                    // add command to commands queue
-                    commands.push({'nick': from, 'handle': handle, 'channel': to, 'hostname': hostname});
-                    bot.whois(from, unfollow);
-                } else // No auth data, ask user to authenticate bot
-                    bot.notice(from,'No auth data.');
-            } else {
-                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
-            }
-        } else
-        if (message.match(/^\.following$/)) {
-            if (await isModuleEnabledInChannel(to,"twitter follow")) {
-                let db = getDatabase();
-                if (token) {
-                    const following = db.prepare("select * from handles where t_channel_name = ? COLLATE NOCASE");
-                    let following_handles = [];
-                    for (const handle of following.iterate(to)){
-                        following_handles.push(handle.t_handle_name);
-                    }
-                    if (following_handles.length > 0){
-                        let result = await twitter.findTwitterUsers(following_handles.toString(),bot);
-                        if (result) {
-                            let accounts=`${result[0].name} (@${result[0].username})`;
-                            result.forEach( function (current,index) {
-                                if (index>0)
-                                    accounts+=`, ${current.name} (@${current.username})`;
-                            });
-                            bot.notice(from,`Following: ${accounts} in ${to}.`);
-                        } else {
-                            bot.notice(from,`Not following anyone in ${to} yet!.`);
-                        }
-                    } else {
-                        bot.notice(from,`Not following anyone in ${to} yet!.`); 
-                    }
-                } else // No auth data, ask user to authenticate bot
-                    bot.notice(from,'No auth data.');
-            } else {
-                bot.notice(from,`The 'twitter follow' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/\.dalle\s.+$/)) {
@@ -1786,12 +1787,12 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.notice(from,'.enable <module name> - enables module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.notice(from,'.disable <module name> - disable module in channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.notice(from,'.modules - get enabled modules in channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.notice(from,`Available modules (case sensitive): 'twitter search', 'twitter follow', 'twitter expand', 'dalle', 'url read', 'openai', 'imdb', 'youtube read', 'youtube search'.`);},1000);
-            setTimeout(function() { bot.notice(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
-            setTimeout(function() { bot.notice(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
-            setTimeout(function() { bot.notice(from,'.following - show twitter accounts followed in the channel.');},1000);
-            setTimeout(function() { bot.notice(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
-            setTimeout(function() { bot.notice(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            setTimeout(function() { bot.notice(from,`Available modules (case sensitive): 'dalle', 'url read', 'openai', 'imdb', 'youtube read', 'youtube search'.`);},1000);
+            //setTimeout(function() { bot.notice(from,'.ut @twitter_handle - retrieves the last tweet from that account.');},1000);
+            //setTimeout(function() { bot.notice(from,'.ut <search terms> - search for one or more terms including hashtags.');},1000);
+            //setTimeout(function() { bot.notice(from,'.following - show twitter accounts followed in the channel.');},1000);
+            //setTimeout(function() { bot.notice(from,'.follow @twitter_handle - follows the account in the channel - must be OWNER (~) or bot admin.');},1000);
+            //setTimeout(function() { bot.notice(from,'.unfollow @twitter_handle - unfollows the account in the channel - must be OWNER (~) or bot admin.');},1000);
             setTimeout(function() { bot.notice(from,'.dalle <prompt> - generate dall-e images from prompt');},1000);
             setTimeout(function() { bot.notice(from,'.openai <prompt> - generate OpenAI Dall-E images from prompt');},1000);
             setTimeout(function() { bot.notice(from,'.openai URL - generate OpenAI Dall-E images from PNG image');},1000);
@@ -1801,7 +1802,7 @@ bot.on('message', async function(event) {
             setTimeout(function() { bot.notice(from,'.help - this help message.');},1000);
         } else
         if (message.match(/^\.bots$/)) {
-            bot.notice(from,`${config.irc.nick} [NodeJS], a Twitter bot for irc. Do .help for usage.`);
+            bot.notice(from,`${config.irc.nick} [NodeJS], a multi-purpose bot for irc. Do .help for usage.`);
         } else
         if (message.match(/^\.source$/)) {
             bot.notice(from,`${config.irc.nick} [NodeJS] :: ${colors.white.bold('Source ')} ${packageInf.repository}`);
