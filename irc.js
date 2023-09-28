@@ -1381,7 +1381,8 @@ bot.on('message', async function(event) {
                     channels[to].running = true;
                     bot.say(to,`Generating from "${prompt}" prompt...`);
                     deleteImages(to);
-                    needle.post(dalleUrl, {prompt: prompt},{json: true}, function(error, response) {
+                    needle.post(dalleUrl, {prompt: prompt, "version": "c4ue22fb7kb6wlad", "token": null, "negative_prompt": ""}, { headers: {
+                        "Content-type": "application/json", "Accept": "application/json"}}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
                             fs.access(path.join(__dirname,'images',to), (err) => {
