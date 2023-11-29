@@ -1705,62 +1705,46 @@ bot.on('message', async function(event) {
                     // check if bot is not handling another call
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
-                        let results = 0, index = 0, details = "", url = "", out = "", votes = "", gross = "";
-                        $('.lister-item-content').map((i,card) =>{
-                            if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title){
+                        let results = 0, index = 0, details = "", url = "", out = "", votes = "", year = "";
+                        $('.ipc-metadata-list-summary-item').map((i,card) =>{
+                            if($(card).find('.ipc-title').text().substring($(card).text().indexOf(". ")+2).toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title){
+                                index = i;
                                 results += 1;
                             }
                         });
                         if (results == 0) {
                             bot.say(to,`No results for '${title}'`);
                         } else {
-                            $('.lister-item-content').map((i, card) => {
-                                if($(card).find('.lister-item-header').find('a').text().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title && (index+1) < 4 ){
-                                    url = "https://imdb.com" + $(card).find('.lister-item-header').find('a').attr('href');
-                                    url = url.substring(0,url.match(/\/\?ref_=adv_li_tt/).index);
+                            $('.ipc-metadata-list-summary-item').map((i, card) => {
+                                if($(card).find('.ipc-title').text().substring($(card).text().indexOf(". ")+2).toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "") == title && index == i ){
+                                    url = "https://imdb.com" + $(card).find('.ipc-title-link-wrapper').attr('href');
                                     details = "";
-                                    if ($(card).find('p.sort-num_votes-visible').find('span')){
-                                        $(card).find('p.sort-num_votes-visible').find('span').map ( (i,info) => {
-                                            if ($(info).attr('name') == 'nv' && $(info).text().indexOf("$") == -1)
-                                                votes = $(info).text().replace(",","");
-                                            if ($(info).attr('name') == 'nv' && $(info).text().indexOf("$") != -1)
-                                                gross = $(info).text();
-                                        });
+                                    if ($(card).find('.ipc-rating-star--voteCount')){
+                                        votes = $(card).find('.ipc-rating-star--voteCount').text().replace("(","").replace(")","").trim();
                                     }
-                                    let stars = $(card).find('.ratings-bar').find('strong').text() + " ";
-                                    if ($(card).find('.ratings-bar').find('strong').text()) {
+                                    let stars = $(card).find('.ipc-rating-star').text().substring(0, 3) + " ";
+                                    if ($(card).find('.ipc-rating-star').text()) {
                                         for (i = 0 ; i < 10 ; i += 2) {
-                                            if (i < parseInt($(card).find('.ratings-bar').find('strong').text())-1){
+                                            if (i <= parseInt($(card).find('.ipc-rating-star').text())-1){
                                                 stars += colors.yellow("\u2605");
                                             } else {
                                                 stars += colors.gray("\u2606");
                                             }
                                         }
                                         if (votes != "") {
-                                            if (parseInt(votes) > 1000000) {
-                                                votes = Math.floor(parseInt(votes)/1000000).toString() + "M";
-                                            } else 
-                                            if (parseInt(votes) > 1000) {
-                                                votes = Math.floor(parseInt(votes)/1000).toString() + "K";
-                                            }
                                             stars += ` (${votes} votes)`;
                                         }
                                     } else {
                                         stars = colors.gray("\u2606") + " N/A";
                                     }
-                                    if ($(card).find('p.text-muted')){
-                                        $(card).find('p.text-muted').map((i, info) => {
-                                            $(info).find('span').map((i,detail) => {
-                                                details += `${$(detail).text().trim()} `;
-                                            });
-                                            if (i == $(card).find('p.text-muted').length - 1){
-                                                details += `· "${$(info).text().trim().replace(/\s{2,}/gi, '')}"`;
-                                            }
-                                        });
+                                    if ($(card).find('.ipc-html-content-inner-div')){
+                                        details += `"${$(card).find('.ipc-html-content-inner-div').text()}"`;
                                     }
-                                    out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")} · ${url}`;
+                                    // dli-title-metadata-item year time PG
+                                    year = `(${$(card).find('.dli-title-metadata-item').text().substring(0, 4)})`
+                                    out = `${$(card).find('.ipc-title').text().substring($(card).text().indexOf(". ")+2)} ${year} · ${stars} · ${details.replaceAll("|","·")} · ${url}`;
                                     if (out.length > 350) {
-                                        out = `[${index+1}/${results}] ${$(card).find('.lister-item-header').find('a').text()} ${$(card).find('.lister-item-year').text()} · ${stars} ·${gross != "" ? ` ${gross} ·` : ``} ${details.replaceAll("|","·")}`;
+                                        out = `${$(card).find('.ipc-title').text().substring($(card).text().indexOf(". ")+2)} ${year} · ${stars} · ${details.replaceAll("|","·")}`;
                                         bot.say(to,out);
                                         bot.say(to,url);
                                     } else {
