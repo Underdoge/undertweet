@@ -1690,7 +1690,6 @@ bot.on('message', async function(event) {
                     } else {
                         title = message.slice(message.match(/\.imdb\s.+$/).index+6).trim().toLocaleLowerCase('en-us').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     }
-                    let yearSearch = false;
                     imdbquery = "https://www.imdb.com/search/title/?title=" + title.replaceAll(" ","+");
                     if (message.match(/-m/)) {
                         imdbquery += "&title_type=feature";
@@ -1699,9 +1698,10 @@ bot.on('message', async function(event) {
                         imdbquery += "&title_type=tv_series";
                     }
                     if (message.match(/-y\s[1-2][0,8,9]([0-9]){2}/)){
-                        yearSearch = true;
-                        imdbquery += "&release_date=" + message.slice(message.match(/[1-2][0,8,9]([0-9]){2}/).index,message.match(/[1-2][0,8,9]([0-9]){2}/).index+4) + "-01-01,";
+                        let year = parseInt(message.slice(message.match(/[1-2][0,8,9]([0-9]){2}/).index,message.match(/[1-2][0,8,9]([0-9]){2}/).index+4))
+                        imdbquery += "&release_date=" + year + "-01-01," + year + "-12-31";
                     }
+                    console.log("Query:" + imdbquery)
                     // check if bot is not handling another call
                     needle.get(imdbquery, { headers: { "Accept-Language": "en-US" }}, function(err, res, body) {
                         const $ = cheerio.load(body);
