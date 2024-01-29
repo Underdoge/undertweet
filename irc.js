@@ -23,6 +23,7 @@ const
     password = config.irc.pass,
     dalleUrl = config.dalle.api_url,
     dalle3Url = config.dallev3.api_url,
+    dalle3Token = config.dallev3.api_token,
     ghettyUrl = config.ghetty.url,
     youtubeAPIKey = config.youtube.api_key,
     youtubeVideosURL = config.youtube.videos_url,
@@ -166,6 +167,26 @@ ${colors.red(` ❤ ${favorites.toLocaleString('en-us')}`)}`);
     }
 }
 
+const download = (url, destPath) => {
+    return new Promise((resolve, reject) => {
+        needle.get(url)
+            .pipe(fs.createWriteStream(destPath))
+            .on('done', err => {
+                resolve(true); 
+            });
+    });
+};
+
+const createDownloadRequests = (urls, to) => {
+    const requests = [];
+    let i = 0;
+    for(const url of urls) {
+        requests.push(download("https://img.craiyon.com/" + url, path.join(__dirname,'images',to,`dall-e_result_${i}.webp`)));
+        i++;
+    }
+    return requests;
+};
+
 function deleteImages(to){
     fs.access(path.join(__dirname,'images',to,'dall-e_result_0.jpg'), (err) => {
         if (!err){
@@ -234,6 +255,78 @@ function deleteImages(to){
     fs.access(path.join(__dirname,'images',to,'dall-e_result_8.jpg'), (err) => {
         if (!err){
             fs.unlink(path.join(__dirname,'images',to,'dall-e_result_8.jpg'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_0.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_0.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_1.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_1.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_2.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_2.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_3.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_3.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_4.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_4.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_5.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_5.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_6.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_6.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_7.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_7.webp'), (err) => {
+                if(err)
+                    console.log(`Error: ${err}`);
+            });
+        }
+    });
+    fs.access(path.join(__dirname,'images',to,'dall-e_result_8.webp'), (err) => {
+        if (!err){
+            fs.unlink(path.join(__dirname,'images',to,'dall-e_result_8.webp'), (err) => {
                 if(err)
                     console.log(`Error: ${err}`);
             });
@@ -1444,50 +1537,43 @@ bot.on('message', async function(event) {
         if (message.match(/\.dalle3\s.+$/)) {
             if (await isModuleEnabledInChannel(to,"dalle3")) {
                 let prompt = message.slice(message.match(/\.dalle3\s.+$/).index+8).trim();
-                console.log('Prompt: "' + prompt + '"')
                 // check if bot is not handling another call
                 if (!channels[to].running){
                     channels[to].running = true;
                     bot.say(to,`Generating from "${prompt}" prompt...`);
                     deleteImages(to);
-                    needle.post(dalle3Url, {prompt: prompt, negative_prompt: "", token: "", model: "none", version: "c4ue22fb7kb6wlac"}, { headers: {
-                        "Origin": "https://www.craiyon.com"}}, function(error, response) {
+                    needle.post(dalle3Url, {prompt: prompt, model: "none", token: dalle3Token, version: "c4ue22fb7kb6wlac", negative_prompt: ""}, { headers: {
+                        "Content-type": "application/json", "Origin": "https://www.craiyon.com"}}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
-                            fs.access(path.join(__dirname,'images',to), (err) => {
+                            fs.access(path.join(__dirname,'images',to), async (err) => {
                                 if (err){
                                     fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
                                 }
-                                let buffer = null;
-                                for (let i=0; i < response.body.images.length ; i++){
-                                    buffer = Buffer.from(response.body.images[i], "base64");
-                                    fs.writeFile(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer, (err) => {
-                                        if (!err && i == (response.body.images.length -1)){
-                                            try {
-                                                // join 9 images into a single 3x3 grid image
-                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
-                                                    img.toFile(path.join(__dirname,'images',to,'row1.jpg'),(err,info) =>{
-                                                        joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
-                                                            img.toFile(path.join(__dirname,'images',to,'row2.jpg'),(err,info) => {
-                                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
-                                                                    img.toFile(path.join(__dirname,'images',to,'row3.jpg'),(err,info) => {
-                                                                        joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
-                                                                            img.toFile(path.join(__dirname,'images',to,'dalle.jpg'),(err,info) => {
-                                                                                postImage(to,from,prompt);
-                                                                            });
-                                                                        });
-                                                                    });
+                                const requests = createDownloadRequests(response.body.images, to);
+                                await Promise.all(requests);
+                                try {
+                                    // join 9 images into a single 3x3 grid image
+                                    joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.webp'), path.join(__dirname,'images',to,'dall-e_result_1.webp'),path.join(__dirname,'images',to,'dall-e_result_2.webp')],options_horizontal).then((img) => {
+                                        img.toFile(path.join(__dirname,'images',to,'row1.jpg'),(err,info) =>{
+                                            joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.webp'), path.join(__dirname,'images',to,'dall-e_result_4.webp'),path.join(__dirname,'images',to,'dall-e_result_5.webp')],options_horizontal).then((img) => {
+                                                img.toFile(path.join(__dirname,'images',to,'row2.jpg'),(err,info) => {
+                                                    joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.webp'), path.join(__dirname,'images',to,'dall-e_result_7.webp'),path.join(__dirname,'images',to,'dall-e_result_8.webp')],options_horizontal).then((img) => {
+                                                        img.toFile(path.join(__dirname,'images',to,'row3.jpg'),(err,info) => {
+                                                            joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
+                                                                img.toFile(path.join(__dirname,'images',to,'dalle.jpg'),(err,info) => {
+                                                                    postImage(to,from,prompt);
                                                                 });
                                                             });
                                                         });
                                                     });
                                                 });
-                                            } catch (error) {
-                                                channels[to].running = false;
-                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
-                                            }
-                                        }
+                                            });
+                                        });
                                     });
+                                } catch (error) {
+                                    channels[to].running = false;
+                                    bot.say(to,`Error joining dalle images into final image: ${error}`);
                                 }
                             });
                         } else {
@@ -1503,7 +1589,7 @@ bot.on('message', async function(event) {
                     bot.notice(from,`@${from} please wait for the current Dall-E request to complete.`);
                 }
             } else {
-                bot.notice(from,`The 'dalle' module is not enabled in ${to}.`);
+                bot.notice(from,`The 'dalle3' module is not enabled in ${to}.`);
             }
         } else
         if (message.match(/\.openai\s.+$/)) {
