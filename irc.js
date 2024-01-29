@@ -1381,8 +1381,11 @@ bot.on('message', async function(event) {
                     channels[to].running = true;
                     bot.say(to,`Generating from "${prompt}" prompt...`);
                     deleteImages(to);
-                    needle.post(dalleUrl, {prompt: prompt, "version": "c4ue22fb7kb6wlad", "token": null, "negative_prompt": ""}, { headers: {
-                        "Content-type": "application/json", "Accept": "application/json"}}, function(error, response) {
+                    needle.post(dalleUrl, {prompt: prompt, "model": "v1"}, { headers: {
+                        "Content-type": "application/json", "Accept": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 Edg/120.0.0.0",
+                        "Origin": "https://www.craiyon.com",
+                        "Accept": "*/*",
+                        "Authority": "api.craiyon.com"}}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
                             fs.access(path.join(__dirname,'images',to), (err) => {
