@@ -22,6 +22,7 @@ const
     tls = config.irc.tls,
     password = config.irc.pass,
     dalleUrl = config.dalle.api_url,
+    dalle3Url = config.dallev3.api_url,
     ghettyUrl = config.ghetty.url,
     youtubeAPIKey = config.youtube.api_key,
     youtubeVideosURL = config.youtube.videos_url,
@@ -1354,7 +1355,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.enable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "dalle" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
+            if (module == "dalle" || module == "dalle3" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
                 commands.push({'nick': from, 'module': module, 'channel': to, 'hostname': hostname});
                 bot.whois(from,enable);
             } else {
@@ -1366,7 +1367,7 @@ bot.on('message', async function(event) {
             let module = null;
             if (message.match(/^\.disable\s\w+(\s\w+)*$/))
                 module = message.slice(message.search(/\s\w+(\s\w+)*$/)+1);
-            if (module == "dalle" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
+            if (module == "dalle" || module == "dalle3" || module == "url read" || module == "openai" || module == 'imdb' || module == 'youtube read' || module == 'youtube search'){
                 commands.push({'nick': from, 'module': module, 'channel': to, 'hostname': hostname});
                 bot.whois(from,disable);
             } else {
@@ -1382,10 +1383,75 @@ bot.on('message', async function(event) {
                     bot.say(to,`Generating from "${prompt}" prompt...`);
                     deleteImages(to);
                     needle.post(dalleUrl, {prompt: prompt, "model": "v1"}, { headers: {
-                        "Content-type": "application/json", "Accept": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 Edg/120.0.0.0",
+                        "Content-type": "application/json", "Accept": "application/json",
                         "Origin": "https://www.craiyon.com",
                         "Accept": "*/*",
                         "Authority": "api.craiyon.com"}}, function(error, response) {
+                        if (!error && response.statusCode == 200){
+                            // save 9 images
+                            fs.access(path.join(__dirname,'images',to), (err) => {
+                                if (err){
+                                    fs.mkdirSync(path.join(__dirname,'images',to), { recursive: true });
+                                }
+                                let buffer = null;
+                                for (let i=0; i < response.body.images.length ; i++){
+                                    buffer = Buffer.from(response.body.images[i], "base64");
+                                    fs.writeFile(path.join(__dirname,'images',to,`dall-e_result_${i}.jpg`), buffer, (err) => {
+                                        if (!err && i == (response.body.images.length -1)){
+                                            try {
+                                                // join 9 images into a single 3x3 grid image
+                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_0.jpg'), path.join(__dirname,'images',to,'dall-e_result_1.jpg'),path.join(__dirname,'images',to,'dall-e_result_2.jpg')],options_horizontal).then((img) => {
+                                                    img.toFile(path.join(__dirname,'images',to,'row1.jpg'),(err,info) =>{
+                                                        joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_3.jpg'), path.join(__dirname,'images',to,'dall-e_result_4.jpg'),path.join(__dirname,'images',to,'dall-e_result_5.jpg')],options_horizontal).then((img) => {
+                                                            img.toFile(path.join(__dirname,'images',to,'row2.jpg'),(err,info) => {
+                                                                joinImages.joinImages([path.join(__dirname,'images',to,'dall-e_result_6.jpg'), path.join(__dirname,'images',to,'dall-e_result_7.jpg'),path.join(__dirname,'images',to,'dall-e_result_8.jpg')],options_horizontal).then((img) => {
+                                                                    img.toFile(path.join(__dirname,'images',to,'row3.jpg'),(err,info) => {
+                                                                        joinImages.joinImages([path.join(__dirname,'images',to,'row1.jpg'),path.join(__dirname,'images',to,'row2.jpg'),path.join(__dirname,'images',to,'row3.jpg')],options_vertical).then((img) => {
+                                                                            img.toFile(path.join(__dirname,'images',to,'dalle.jpg'),(err,info) => {
+                                                                                postImage(to,from,prompt);
+                                                                            });
+                                                                        });
+                                                                    });
+                                                                });
+                                                            });
+                                                        });
+                                                    });
+                                                });
+                                            } catch (error) {
+                                                channels[to].running = false;
+                                                bot.say(to,`Error joining dalle images into final image: ${error}`);
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        } else {
+                            if (response.statusCode == 524){
+                                bot.notice(from,`@${from} Dall-E Service is too Busy. Please try again later...`);
+                            } else {
+                                bot.say(to,`Dall-E Error ${response.statusCode}: ${response.statusMessage}`);
+                            }
+                            channels[to].running = false;
+                        }
+                    });
+                } else {
+                    bot.notice(from,`@${from} please wait for the current Dall-E request to complete.`);
+                }
+            } else {
+                bot.notice(from,`The 'dalle' module is not enabled in ${to}.`);
+            }
+        } else
+        if (message.match(/\.dalle3\s.+$/)) {
+            if (await isModuleEnabledInChannel(to,"dalle3")) {
+                let prompt = message.slice(message.match(/\.dalle3\s.+$/).index+8).trim();
+                console.log('Prompt: "' + prompt + '"')
+                // check if bot is not handling another call
+                if (!channels[to].running){
+                    channels[to].running = true;
+                    bot.say(to,`Generating from "${prompt}" prompt...`);
+                    deleteImages(to);
+                    needle.post(dalle3Url, {prompt: prompt, negative_prompt: "", token: "", model: "none", version: "c4ue22fb7kb6wlac"}, { headers: {
+                        "Origin": "https://www.craiyon.com"}}, function(error, response) {
                         if (!error && response.statusCode == 200){
                             // save 9 images
                             fs.access(path.join(__dirname,'images',to), (err) => {
@@ -1803,4 +1869,4 @@ bot.on('registered', function (){
 })
 
 bot.connect({host,port,tls,nick,username,gecos,password});
-needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'});
+needle.defaults({user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 uacq'});
