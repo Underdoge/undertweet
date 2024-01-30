@@ -1458,7 +1458,7 @@ bot.on('message', async function(event) {
         if (message.match(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)) {
             if (await isModuleEnabledInChannel(to,"url read")) {
                 let url=message.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/)[0];
-                let options = { follow_max: 5, headers: {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52'}};
+                let options = { follow_max: 5 };
                 let stream = needle.get(url, options);
                 let chunk = null;
                 stream.on('readable', function() {
