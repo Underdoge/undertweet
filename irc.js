@@ -1976,4 +1976,4 @@ bot.on('registered', function (){
 })
 
 bot.connect({host,port,tls,nick,username,gecos,password});
-needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'});
+needle.defaults({user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1788.0  uacq'});
